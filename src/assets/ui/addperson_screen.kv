@@ -1,0 +1,512 @@
+#Copyright (C) 2021 Andrii Sonsiadlo
+
+<PopupBox>:
+    pop_up_text: _pop_up_text
+    size_hint: .5, .5
+    auto_dismiss: True
+    title: 'Status'
+
+    BoxLayout:
+        orientation: "vertical"
+        Label:
+            id: _pop_up_text
+            text: ''
+
+<AddPerson>:
+    name:"add_person"
+
+    on_pre_enter:
+        root.refresh()
+
+    #frame surrounding the workspace
+    BoxLayout:
+        orientation: 'vertical'
+        padding:30,0,30,30
+        canvas.before:
+            Color:
+                rgb: bck_color
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        #mode title
+        BoxLayout:
+            orientation:'horizontal'
+            size_hint_y:None
+            height:40
+            Label:
+                size_hint_x: None
+                width:50
+            Label:
+                text: "Add Wanted Person"
+                font_name: font_regular
+                font_size: '18sp'
+                color: header_text_color
+                size_hint_y: None
+                size_hint_x: None
+                height:40
+                halign:"left"
+                valign:"center"
+
+
+        BoxLayout:
+            padding:20
+            orientation: 'vertical'
+            #workspace background
+            canvas.before:
+                Color:
+                    rgb: workspace_bck_color
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+            BoxLayout:
+                orientation: 'horizontal'
+                padding:0,5,5,5
+
+                BoxLayout:
+                    orientation: 'vertical'
+
+                    BoxLayout:
+                        #main horizontal layout - put new elements here
+
+                        id: content
+                        orientation: 'horizontal'
+                        size_hint_y:None
+                        height:220
+
+                        BoxLayout:
+                            padding:0,0,20,0
+                            #vertical layout - contains model info headers
+                            id: person_infos
+                            orientation:'vertical'
+                            pos_hint: {'top': 1}
+
+                            BoxLayout:
+                                orientation:'horizontal'
+                                padding:0,0,0,2
+                                Label:
+                                    text:"Name: "
+                                    text_size: self.size
+                                    valign:'middle'
+                                    halign:'right'
+                                    color: header_text_color
+                                    font_name: font_light
+
+                                CustomInput:
+                                    id:create_person_name
+                                    size_hint: (2, 1)
+                                    hint_text:"Person name"
+                                    text_size: self.size
+                                    valign:'middle'
+                                    halign:'left'
+                                    color: normal_text_color
+                                    font_name: font_light
+
+
+
+
+                            BoxLayout:
+                                orientation:'horizontal'
+                                padding:0,0,0,2
+                                Label:
+                                    text:"Age: "
+                                    text_size: self.size
+                                    valign:'middle'
+                                    halign:'right'
+                                    color: header_text_color
+                                    font_name: font_light
+
+                                CustomInput:
+                                    id:create_person_age
+                                    size_hint: (2, 1)
+                                    hint_text:"Age"
+                                    text_size: self.size
+                                    valign:'middle'
+                                    halign:'left'
+                                    color: normal_text_color
+                                    font_name: font_light
+
+                            BoxLayout:
+                                orientation:'horizontal'
+                                padding:0,5,0,5
+                                Label:
+                                    text:"Gender: "
+                                    text_size: self.size
+                                    valign:'middle'
+                                    halign:'right'
+                                    color: header_text_color
+                                    font_name: font_light
+                                BoxLayout:
+                                    orientation: 'horizontal'
+                                    size_hint: (2, 1)
+                                    Label:
+                                        size_hint_x: 0.3
+                                    BoxLayout:
+                                        orientation: 'horizontal'
+                                        size_hint_x: .75
+                                        CustomRadioButtonSec:
+                                            id: gender_male
+                                            valign:'middle'
+                                            halign:'right'
+                                            group: 'gender'
+                                            active: True
+                                        Label:
+                                            text: "Male"
+                                            #text_size: self.size
+                                            size_hint:
+                                            valign:'middle'
+                                            font_name: font_light
+                                            color: normal_text_color
+                                    Label:
+                                        size_hint_x: 0.2
+                                    BoxLayout:
+                                        orientation: 'horizontal'
+                                        size_hint_x: 0.9
+                                        CustomRadioButtonSec:
+                                            id: gender_female
+                                            valign:'middle'
+                                            halign:'right'
+                                            group: 'gender'
+                                        Label:
+                                            text: 'Female'
+                                            #text_size: self.size
+                                            valign:'middle'
+                                            font_name: font_light
+                                            color: normal_text_color
+                                    Label:
+                                        size_hint_x: 0.3
+
+
+                            BoxLayout:
+                                orientation:'horizontal'
+                                padding:0,0,0,2
+                                Label:
+                                    text:"Nationality: "
+                                    text_size: self.size
+                                    valign:'middle'
+                                    halign:'right'
+                                    color: header_text_color
+                                    font_name: font_light
+
+                                CustomInput:
+                                    id:create_person_nationality
+                                    size_hint: (2, 1)
+                                    hint_text:"Nationality"
+                                    text_size: self.size
+                                    valign:'middle'
+                                    halign:'left'
+                                    color: normal_text_color
+                                    font_name: font_light
+
+                            BoxLayout:
+                                orientation:'horizontal'
+                                padding:0,0,0,2
+                                size_hint_y: 2
+                                Label:
+                                    text:"Details: "
+                                    multiline:True
+                                    text_size: self.size
+                                    valign:'middle'
+                                    halign:'right'
+                                    color: header_text_color
+                                    font_name: font_light
+
+                                CustomInput:
+                                    id:create_person_details
+                                    size_hint: (2, 1)
+                                    hint_text:"Details"
+                                    text_size: self.size
+                                    valign:'middle'
+                                    halign:'left'
+                                    color: normal_text_color
+                                    font_name: font_light
+
+                            BoxLayout:
+                                orientation:'horizontal'
+                                padding:0,0,0,2
+                                Label:
+                                    text:"Contact phone: "
+                                    text_size: self.size
+                                    valign:'middle'
+                                    halign:'right'
+                                    color: header_text_color
+                                    font_name: font_light
+
+                                CustomInput:
+                                    id:create_contact_phone
+                                    multiline:False
+                                    size_hint: (2, 1)
+                                    hint_text:"+48  888 - 888 - 888"
+                                    text_size: self.size
+                                    valign:'middle'
+                                    halign:'left'
+                                    color: normal_text_color
+                                    font_name: font_light
+
+
+                    BoxLayout:
+                        #layout for having save buttons in the centre
+                        orientation:'vertical'
+                        halign:'center'
+                        valign:'center'
+                        padding: 35,25,55,25
+                        height:70
+                        width:50
+
+                        BoxLayout:
+                            orientation: 'horizontal'
+                            RoundButton:
+                                id:delete_photo_btn
+                                size_hint_y:None
+                                size_hint_x: 0.5
+                                height:70
+                                pos_hint: {'top': 1}
+                                on_release:
+                                    root.delete_photo()
+                                Label:
+                                    id:delete_photo_btn_text
+                                    center_y: self.parent.center_y+15
+                                    center_x: self.parent.center_x
+                                    color: normal_text_color
+                                    font_name: font_light
+                                    font_size: '13sp'
+                                    text:"Delete photo"
+                                Image:
+                                    id: delete_photo_icon
+                                    source: './Graphics/Images/remove_photo.png'
+                                    center_y: delete_photo_btn_text.center_y-25
+                                    center_x: delete_photo_btn_text.center_x
+                                    size_hint_y:None
+                                    height: 25
+                                    allow_stretch: True
+                                    opacity:0.6
+                                    mipmap:True
+                            Label:
+                                size_hint_x: 0.05
+
+                            DropButton:
+                                id:import_photos_btn
+                                size_hint_y:None
+                                size_hint_x: 0.5
+                                height:70
+                                pos_hint: {'top': 1}
+                                on_release:
+                                    root.load_photos()
+                                Label:
+                                    id:import_photos_btn_text
+                                    center_y: self.parent.center_y+15
+                                    center_x: self.parent.center_x
+                                    color: normal_text_color
+                                    font_name: font_light
+                                    font_size: '13sp'
+                                    text:"Add photos"
+                                Label:
+                                    id:num_files
+                                    center_y: self.parent.center_y-10
+                                    center_x: self.parent.center_x
+                                    color: normal_text_color
+                                    font_name: font_light
+                                    font_size: '13sp'
+                                    text:"0 loaded"
+                                    opacity: 0
+                                Image:
+                                    id: add_photo_icon
+                                    source: './Graphics/Images/add_photo.png'
+                                    center_y: import_photos_btn_text.center_y-25
+                                    center_x: import_photos_btn_text.center_x
+                                    size_hint_y:None
+                                    height: 25
+                                    allow_stretch: True
+                                    opacity:0.6
+                                    mipmap:True
+                        Label:
+                            size_hint_y: 1
+
+                        BoxLayout:
+                            orientation: 'horizontal'
+
+
+                            RoundButton:
+                                id:clear_btn
+                                size_hint_y:None
+                                size_hint_x: 0.5
+                                height:70
+                                pos_hint: {'top': 1}
+                                on_release:
+                                    root.clear_inputs()
+                                Label:
+                                    id:cancel_person_btn_text
+                                    center_y: self.parent.center_y+15
+                                    center_x: self.parent.center_x
+                                    color: normal_text_color
+                                    font_name: font_light
+                                    font_size: '13sp'
+                                    text:"Clear Inputs"
+
+                                Image:
+                                    id: cancel_person_icon
+                                    source: './Graphics/Images/cancel64.png'
+                                    center_y: cancel_person_btn_text.center_y-25
+                                    center_x: cancel_person_btn_text.center_x
+                                    size_hint_y:None
+                                    height: 25
+                                    allow_stretch: True
+                                    opacity:0.6
+                                    mipmap:True
+
+                            Label:
+                                size_hint_x: 0.05
+
+                            RoundButton:
+                                id:add_person_btn
+                                size_hint_y:None
+                                size_hint_x: 0.5
+                                height:70
+                                pos_hint: {'top': 1}
+                                on_release:
+                                    root.add_person()
+                                Label:
+                                    id:add_person_btn_text
+                                    center_y: self.parent.center_y+15
+                                    center_x: self.parent.center_x
+                                    color: normal_text_color
+                                    font_name: font_light
+                                    font_size: '13sp'
+                                    text:"Add Person"
+
+                                Image:
+                                    id: add_person_icon
+                                    source: './Graphics/Images/add-user.png'
+                                    center_y: add_person_btn_text.center_y-25
+                                    center_x: add_person_btn_text.center_x
+                                    size_hint_y:None
+                                    height: 25
+                                    allow_stretch: True
+                                    opacity:0.6
+                                    mipmap:True
+                        Label:
+
+
+
+
+                BoxLayout:
+                    #vertical layout - contains model info
+                    id: photo_preview_box
+                    orientation:'vertical'
+                    size_hint_y:1
+                    size_hint_x:1
+                    pos_hint: {'top': 1}
+                    canvas.before:
+                        Color:
+                            rgb: (1,1,1,1)
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+
+                    Label:
+                        size_hint_y:None
+                        height:10
+
+                    ImageButton:
+                        anchor_x: 'center'
+                        anchor_y: 'center'
+                        id:preview_photo
+                        source: './Graphics/Images/default-user.png'
+                        allow_stretch: True
+                        #size_hint_y:None
+                        keep_ratio:True
+                        on_press: root.popup_photo()
+                        #height:50
+                    Label:
+                        id:preview_photo_name
+                        size_hint_y:None
+                        height:30
+                        text:'123.jpg (1/24)'
+                        color: normal_text_color
+                        font_name: font_light
+                        text_size: self.size
+                        halign:'center'
+                        valign:'center'
+                        center_y: preview_photo.center_y-preview_photo.height/2 + 35
+                        center_x: preview_photo.center_x
+                        font_size: '13sp'
+
+
+                    BoxLayout: #next/previous photo button box
+                        orientation: 'horizontal'
+                        size_hint_y:None
+                        height:40
+                        BoxLayout: #ok and nok results box
+                            orientation: 'vertical'
+
+                        RoundButton:
+                            id: previous_photo_btn
+                            text:"<"
+                            size_hint_x:.25
+                            size_hint_y:None
+                            height:30
+                            pos_hint: {'top': 1}
+                            on_release:
+                                root.previous_photo()
+                        Label:
+                            size_hint_x:None
+                            width:10
+                        RoundButton:
+                            id: next_photo_btn
+                            text:">"
+                            size_hint_x:.25
+                            size_hint_y:None
+                            height:30
+                            pos_hint: {'top': 1}
+                            on_release:
+                                root.next_photo()
+                        Label:
+
+                    BoxLayout: #next/previous photo button box
+                        orientation: 'horizontal'
+                        size_hint_y:None
+                        height:40
+                        BoxLayout: #ok and nok results box
+                            orientation: 'vertical'
+
+                        RoundButton:
+                            id: previous_photo_btn
+                            text:"Crop"
+                            size_hint_x:2
+                            size_hint_y:None
+                            height:30
+                            pos_hint: {'top': 1}
+                            on_release:
+                                root.cropping()
+                        Label:
+                            size_hint_x:None
+                            width:10
+                        RoundButton:
+                            id: next_photo_btn
+                            text:"Face detection"
+                            size_hint_x:2
+                            size_hint_y:None
+                            height:30
+                            pos_hint: {'top': 1}
+                            on_release:
+                                root.face_detection()
+                        Label:
+                    Label:
+                        id:count_face_text
+                        opacity:0
+                        size_hint_y:None
+                        height:15
+                        text:'123.jpg (1/24)'
+                        color: normal_text_color
+                        font_name: font_light
+                        text_size: self.size
+                        halign:'center'
+                        valign:'center'
+                        center_y: preview_photo.center_y-preview_photo.height/2 + 35
+                        center_x: preview_photo.center_x
+                        font_size: '13sp'
+
+
+
+

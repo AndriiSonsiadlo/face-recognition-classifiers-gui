@@ -1,0 +1,289 @@
+#Copyright (C) 2021 Andrii Sonsiadlo
+
+<LearningEdit>:
+    name:"learning_edit"
+    on_pre_enter:
+        root.load_list()
+        root.clear_inputs()
+        root.show_selected()
+    #frame surrounding the workspace
+    BoxLayout:
+        orientation: 'vertical'
+        padding:30,0,30,30
+        canvas.before:
+            Color:
+                rgb: bck_color
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        #mode title
+        BoxLayout:
+            orientation:'horizontal'
+            size_hint_y:None
+            height:40
+            Label:
+                size_hint_x: None
+                width:25
+            Label:
+                text: "Editing model"
+                font_name: font_regular
+                font_size: '18sp'
+                color: header_text_color
+                size_hint_y: None
+                size_hint_x: None
+                height:40
+                halign:"left"
+                valign:"center"
+
+        BoxLayout:
+            padding:20
+            orientation: 'horizontal'
+            #workspace background
+            canvas.before:
+                Color:
+                    rgb: workspace_bck_color
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+            BoxLayout:
+                id: learning_infos
+                pos_hint: {'top': 1}
+                orientation:'vertical'
+                size_hint_y:None
+                height: 270
+                size_hint_x:3
+
+                Label:
+                    size_hint_y: None
+                    height: 20
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: 30
+                    Label:
+                        text:"Model name: "
+                        text_size: self.size
+                        size_hint_x:0.6
+                        valign:'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+
+                    CustomInput:
+                        id:model_name
+                        hint_text:"model name"
+                        size_hint_x:1
+                        text_size: self.size
+                        valign:'middle'
+                        halign:'left'
+                        color: normal_text_color
+                        font_name: font_light
+                    Label:
+                        size_hint_x:0.4
+
+                Label:
+                    size_hint_y: None
+                    height: 10
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: 30
+                    Label:
+                        text:"Created: "
+                        text_size: self.size
+                        size_hint_x:0.6
+                        valign:'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+
+                    Label:
+                        id:created_date
+                        text:"Date"
+                        text_size: self.size
+                        size_hint_x:1
+                        valign:'middle'
+                        halign:'left'
+                        color: normal_text_color
+                        font_name: font_light
+                    Label:
+                        size_hint_x:0.4
+
+                Label:
+                    size_hint_y: None
+                    height: 10
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: 30
+                    Label:
+                        text:"Author: "
+                        text_size: self.size
+                        size_hint_x:0.6
+                        valign:'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+                    Label:
+                        id:author
+                        multiline:False
+                        size_hint_x:1
+                        text:"None"
+                        text_size: self.size
+                        valign:'middle'
+                        halign:'left'
+                        color: normal_text_color
+                        font_name: font_light
+                    Label:
+                        size_hint_x:0.4
+                Label:
+                    size_hint_y: None
+                    height: 10
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: 60
+                    Label:
+                        text:"Description: "
+                        text_size: self.size
+                        valign:'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+                        size_hint_x:0.6
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        size_hint_x:1
+                        CustomInput:
+                            id: description
+                            hint_text:"Description"
+                            size_hint_x:0.95
+                            text_size: self.size
+                            valign:'middle'
+                            halign:'left'
+                            color: normal_text_color
+                            font_name: font_light
+                        Label:
+                            size_hint_x:None
+                            width:10
+                        BoxLayout:
+                            id:delete_button_box
+                            orientation: 'vertical'
+                            size_hint_x:None
+                            width: 30
+                            height: 30
+                            Label:
+                                size_hint_y:.2
+                            RoundButton:
+                                id:delete_desc_button
+                                size_hint_x:None
+                                size_hint_y: None
+                                height: 20
+                                width:self.height
+                                on_release: root.delete_description()
+                                Image:
+                                    source: './Graphics/Images/delet_this.png'
+                                    center_y: delete_desc_button.center_y
+                                    center_x: delete_desc_button.center_x
+                                    allow_stretch: True
+                                    width: delete_button_box.height*.3
+                                    opacity:0.5
+                            Label:
+                                size_hint_y:.2
+                    Label:
+                        size_hint_x:0.4
+                Label:
+                    size_hint_y: None
+                    height: 10
+                BoxLayout:
+                    orientation: 'horizontal'
+                    id: threshold_box
+                    size_hint_y: None
+                    height: 30
+                    Label:
+                        size_hint_x:0.6
+                        text:"Threshold: "
+                        size_hint_x:0.6
+                        text_size: self.size
+                        valign:'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        size_hint_x:1
+                        CustomInput:
+                            id:threshold
+                            disabled:True
+                            input_filter: 'float'
+                            hint_text:root.get_default_threshold() if manual_checkbox.active == False else root.get_model_threshold()
+                            text_size: self.size
+                            valign:'middle'
+                            halign:'left'
+                            color: normal_text_color
+                            font_name: font_light
+                            size_hint_x:None
+                            width:80
+                        CustomCheckbox:
+                            id: manual_checkbox
+                            active:False
+                            size_hint_x:None
+                            width:40
+                            on_active: root.enable_input(self.active)
+                        Label:
+                           # size_hint_x:0.7
+                    Label:
+                        size_hint_x:0.4
+                Label:
+
+
+            BoxLayout:
+                #layout for having save button in the centre
+                orientation:'vertical'
+                BoxLayout:
+                    #layout for having save button in the centre
+                    orientation:'horizontal'
+                    size_hint_y:None
+                    height: 50
+                    Label:
+                    RoundButton:
+                        size_hint_y:None
+                        size_hint_x:None
+                        width:100
+                        height:40
+                        pos_hint: {'top': 1}
+                        text:"Save"
+                        color: normal_text_color
+                        font_name: font_light
+                        on_release:
+                            root.save_edited_model()
+                            root.manager.transition.direction = "left"
+                            root.manager.current = "learning"
+                    Label
+
+                BoxLayout:
+                    #layout for having save button in the centre
+                    orientation:'horizontal'
+                    size_hint_y:None
+                    height: 50
+                    Label:
+                    RoundButton:
+                        size_hint_y:None
+                        size_hint_x:None
+                        width:100
+                        height:40
+                        pos_hint: {'top': 1}
+                        text:"Cancel"
+                        color: normal_text_color
+                        font_name: font_light
+                        on_release:
+                            root.manager.transition.direction = "left"
+                            root.manager.current = "learning"
+                    Label:
+                Label:
+
+

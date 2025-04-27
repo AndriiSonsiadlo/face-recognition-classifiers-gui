@@ -1,0 +1,15 @@
+#Copyright (C) 2021 Andrii Sonsiadlo
+
+
+<PlotPopup>:
+    background: ''
+    background_color: 0,0,0,.5
+    size_hint: .7, .7
+
+    ImageButton:
+        id: plot
+        size: self.parent.size
+        pos: self.parent.pos
+        allow_stretch:True
+        keep_ratio:True
+        on_press: root.close()

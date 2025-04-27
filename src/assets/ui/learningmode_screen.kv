@@ -1,0 +1,579 @@
+#Copyright (C) 2021 Andrii Sonsiadlo
+
+#:import Factory kivy.factory.Factory
+
+<LearningMode>:
+    name: "learning"
+    on_pre_enter:
+        root.refresh()
+    #frame surrounding the workspace
+    BoxLayout:
+        orientation: 'vertical'
+        padding:30,0,30,30
+        canvas.before:
+            Color:
+                rgb: bck_color
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        #mode title
+        BoxLayout:
+            orientation:'horizontal'
+            size_hint_y:None
+            height:40
+            Label:
+                size_hint_x: None
+                width:25
+            Label:
+                text: "Learning mode"
+                font_name: font_regular
+                font_size: '18sp'
+                color: header_text_color
+                size_hint_y: None
+                size_hint_x: None
+                height:40
+                halign:"left"
+                valign:"center"
+
+        BoxLayout:
+            padding:20
+            orientation: 'horizontal'
+            #workspace background
+            canvas.before:
+                Color:
+                    rgb: workspace_bck_color
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+
+            BoxLayout:
+                id: learning_infos
+                orientation:'vertical'
+                pos_hint: {'top': 1}
+                size_hint_x:None
+                width:410
+                size_hint_y:1
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: 30
+                    Label:
+                        text:"Model name: "
+                        text_size: self.size
+                        halign:'right'
+                        valign:'center'
+                        color: header_text_color
+                        font_name: font_light
+                    Spinner:
+                        id:model_name
+                        text:root.model_name
+                        text_size : self.width, None
+                        halign:'center'
+                        valign:'middle'
+                        color: normal_text_color
+                        font_name: font_light
+                        background_normal:'./Graphics/Images/light_grey.jpg'
+                        background_down: './Graphics/Images/pressed.jpg'
+                        values: root.get_values()
+                        on_text: root.on_spinner_select(model_name.text)
+                        option_cls: Factory.get("MySpinnerOption")
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: 30
+                    Label:
+                        text:"Created: "
+                        text_size: self.size
+                        halign:'right'
+                        valign:'middle'
+                        color: header_text_color
+                        font_name: font_light
+
+                    Label:
+                        id:created_date
+                        text:root.created
+                        text_size: self.size
+                        halign:'left'
+                        valign:'middle'
+                        color: normal_text_color
+                        font_name: font_light
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: 30
+                    Label:
+                        text:"Author: "
+                        text_size: self.size
+                        halign:'right'
+                        valign:'middle'
+                        color: header_text_color
+                        font_name: font_light
+
+                    Label:
+                        id:author
+                        text:root.author
+                        text_size: self.size
+                        halign:'left'
+                        valign:'middle'
+                        color: normal_text_color
+                        font_name: font_light
+                Label:
+                    size_hint_y: None
+                    height: 7
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    id: algorithm_box
+                    size_hint_y: None
+                    height: 30
+                    Label:
+                        text:"Algorithm: "
+                        text_size: self.size
+                        valigh: 'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+
+                    Label:
+                        id:algorithm_text
+                        text:"N/A"
+                        text_size: self.size
+                        valigh: 'middle'
+                        halign:'left'
+                        color: normal_text_color
+                        font_name: font_light
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    id: weight_box
+                    size_hint_y: None
+                    height: 30
+                    Label:
+                        text:"Weight: "
+                        text_size: self.size
+                        valigh: 'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+
+                    Label:
+                        id:weight
+                        text:"N/A"
+                        text_size: self.size
+                        valigh: 'middle'
+                        halign:'left'
+                        color: normal_text_color
+                        font_name: font_light
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    id: gamma_box
+                    size_hint_y: None
+                    height: 30
+                    Label:
+                        text:"Gamma: "
+                        text_size: self.size
+                        valigh: 'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+
+                    Label:
+                        id:gamma
+                        text:"N/A"
+                        text_size: self.size
+                        valigh: 'middle'
+                        halign:'left'
+                        color: normal_text_color
+                        font_name: font_light
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    id: neighbor_box
+                    size_hint_y: None
+                    height: 30
+                    Label:
+                        text:"Neighbors: "
+                        text_size: self.size
+                        valigh: 'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+
+                    Label:
+                        id:num_neighbors
+                        text:"N/A"
+                        text_size: self.size
+                        valigh: 'middle'
+                        halign:'left'
+                        color: normal_text_color
+                        font_name: font_light
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    id:threshold_box
+                    size_hint_y: None
+                    height: 30
+                    Label:
+                        text:"Threshold: "
+                        text_size: self.size
+                        valigh: 'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+                    Label:
+                        id:threshold
+                        text:"N/A"
+                        text_size: self.size
+                        valigh: 'middle'
+                        halign:'left'
+                        color: normal_text_color
+                        font_name: font_light
+
+                Label:
+                    size_hint_y: None
+                    height: 7
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: 30
+                    Label:
+                        text:"Learning time [in sec]: "
+                        text_size: self.size
+                        valigh: 'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+
+                    Label:
+                        id:learning_time
+                        text:"N/A"
+                        text_size: self.size
+                        valigh: 'middle'
+                        halign:'left'
+                        color: normal_text_color
+                        font_name: font_light
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: 30
+                    Label:
+                        text:"Accuracy: "
+                        text_size: self.size
+                        valigh: 'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+
+                    Label:
+                        id:accuracy
+                        text:"N/A"
+                        text_size: self.size
+                        valigh: 'middle'
+                        halign:'left'
+                        color: normal_text_color
+                        font_name: font_light
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: 30
+                    Label:
+                        text:"Count in training: "
+                        text_size: self.size
+                        valigh: 'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+
+                    Label:
+                        id:num_trained
+                        text:"N/A"
+                        text_size: self.size
+                        valigh: 'middle'
+                        halign:'left'
+                        color: normal_text_color
+                        font_name: font_light
+
+
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: 30
+#                    opacity: 0
+                    Label:
+                        text:"Count in testing: "
+                        text_size: self.size
+                        valigh: 'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+
+                    Label:
+                        id:num_tested
+                        text:"N/A"
+                        text_size: self.size
+                        valigh: 'middle'
+                        halign:'left'
+                        color: normal_text_color
+                        font_name: font_light
+
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: None
+                    height: 0
+                    opacity: 0
+                    Label:
+                        text:"Count in database: "
+                        text_size: self.size
+                        valigh: 'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+
+                    Label:
+                        id:num_all
+                        text:"N/A"
+                        text_size: self.size
+                        valigh: 'middle'
+                        halign:'left'
+                        color: normal_text_color
+                        font_name: font_light
+
+                Label:
+
+
+                BoxLayout:
+                    Label:
+                        pos_hint: {'top': 1}
+                        size_hint_y:4
+
+                Label:
+                    text:"Description: "
+                    text_size: self.size
+                    size_hint_x:None
+                    width:140
+                    halign:'left'
+                    size_hint_y:None
+                    height:25
+                    color: header_text_color
+                    font_name: font_light
+                    opacity:1 if comment.opacity==1 else 0
+
+                ScrollView:
+                    size_hint_y:None
+                    height: 60
+                    size_hint_x:1
+                    Label:
+                        id:comment
+                        height: self.texture_size[1]
+                        width: self.texture_size[0]
+                        text:root.comment
+                        opacity:0
+                        font_name: font_light
+                        text_size: self.width, None
+                        size_hint: (1,None)
+                        valign:'middle'
+                        halign:'left'
+                        color: normal_text_color
+
+            BoxLayout:
+                orientation: 'vertical'
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: 0.35
+                    Label:
+                        size_hint_x:None
+                        width:30
+                    RoundButton:
+                        id:delete_btn
+                        disabled:True
+                        size_hint_y:None
+                        height: 50
+                        size_hint_x:.3
+                        pos_hint: {'top': 1}
+                        opacity:.5
+                        on_release:
+                            root.show_popup()
+                        Label:
+                            id:delete_btn_text
+                            center_y: self.parent.center_y*1.03
+                            center_x: self.parent.center_x
+                            color: normal_text_color
+                            font_name: font_light
+                            font_size: '13sp'
+                            text:"Delete"
+                            disabled_color: normal_text_color
+                        Image:
+                            source: './Graphics/Images/delet_this.png'
+                            center_y: delete_btn_text.center_y/1.05
+                            center_x: delete_btn_text.center_x
+                            size_hint_y:None
+                            height: 22
+                            allow_stretch: True
+                            opacity:0.5
+
+                    Label:
+                        size_hint_x:None
+                        width:10
+
+                    RoundButton:
+                        id:edit_btn
+                        disabled:True
+                        size_hint_y:None
+                        height: 50
+                        size_hint_x:.3
+                        pos_hint: {'top': 1}
+                        opacity:.5
+                        on_release:
+                            root.manager.current = "learning_edit"
+                            root.manager.transition.direction = "left"
+                        Label:
+                            id:edit_btn_text
+                            center_y: self.parent.center_y*1.03
+                            center_x: self.parent.center_x
+                            color: normal_text_color
+                            font_name: font_light
+                            font_size: '13sp'
+                            text:"Edit"
+                            disabled_color: normal_text_color
+
+                        Image:
+                            source: './Graphics/Images/editv2.png'
+                            center_y: edit_btn_text.center_y/1.05
+                            center_x: edit_btn_text.center_x
+                            size_hint_y:None
+                            height: 20
+                            allow_stretch: True
+                            opacity:0.5
+
+                    Label:
+                        size_hint_x:.1
+
+                    RoundButton:
+                        id:create_btn
+                        size_hint_y:None
+                        height: 50
+                        size_hint_x:.7
+                        pos_hint: {'top': 1}
+                        on_release:
+                            root.manager.transition.direction = "left"
+                            root.manager.current = "learning_create"
+                        Label:
+                            id:create_btn_text
+                            center_y: self.parent.center_y*1.03
+                            center_x: self.parent.center_x
+                            color: normal_text_color
+                            font_name: font_light
+                            font_size: '13sp'
+                            text:"Create new"
+
+                        Image:
+                            source: './Graphics/Images/add.png'
+                            center_y: create_btn_text.center_y/1.05
+                            center_x: create_btn_text.center_x
+                            size_hint_y:None
+                            height: 20
+                            allow_stretch: True
+                            opacity:0.5
+                BoxLayout:
+                    padding:0,0,100,0
+                    orientation: 'vertical'
+                    id: train_dataset
+                    Label:
+                        text:"Model can recognize:"
+                        text_size: self.size
+                        size_hint_y: None
+                        height: 25
+                        halign:'center'
+                        valign:'top'
+                        color: header_text_color
+                        font_name: font_light
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        BoxLayout:
+                            orientation: 'vertical'
+                            padding: 0,10,0,0
+
+                            canvas.before:
+                                Color:
+                                    rgb: (240/255,240/255,240/255)
+                                Rectangle:
+                                    pos: self.pos
+                                    size: self.size
+
+                            RecycleView:
+                                id: rv
+                                viewclass: 'SelectableLabel_create'
+                                SelectableRecycleBoxLayout_create:
+                                    id:rv_box
+                                    default_size: None, dp(28)
+                                    default_size_hint: 1, None
+                                    size_hint_y: None
+                                    size_hint_x:1
+                                    height: self.minimum_height
+                                    orientation: 'vertical'
+                                    multiselect: False
+                                    touch_multiselect: False
+
+                            TextInput:
+                                size_hint_y: None
+                                id: search_field
+                                height: 30
+                                id: search_input
+                                font_size: self.height/2
+                                multiline:False
+                                hint_text:"Search..."
+                                color: normal_text_color
+                                font_name: font_light
+                                valign:'middle'
+                                halign:'left'
+                                text_size: self.size
+                                on_text:
+                                    if self.text: root.search_person(self.text)
+                                    else: root.set_data_recycleview()
+                    Label:
+                        size_hint_y: 0.5
+
+
+
+
+
+
+            #Label:
+                #text:"GPU: "
+                #text_size: self.size
+                #size_hint_x:None
+                #width:50
+                #font_size: '13sp'
+                #halign:'right'
+                #valign:'top'
+                #color: header_text_color
+                #font_name: font_light
+
+            #Label:
+                #id:gpu_name
+                #size_hint_x:.6
+                #text:"No detected"
+                #font_size: '13sp'
+                #text_size: self.size
+                #valign:'top'
+                #halign:'left'
+                #size_hint_x:None
+                #color: normal_text_color
+                #font_name: font_light
+
+
+
+
+

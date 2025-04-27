@@ -1,0 +1,398 @@
+#Copyright (C) 2021 Andrii Sonsiadlo
+
+
+<MyPopupInfo>:
+    title_font: font_regular
+    title_color: normal_text_color
+    size_hint: None, None
+    size: 200, 120
+    background: './Graphics/Images/pressed.jpg'
+    separator_color: header_text_color
+    BoxLayout:
+        orientation: 'vertical'
+        Label:
+            size_hint_y:.2
+        BoxLayout:
+            orientation: 'horizontal'
+            Label:
+                size_hint_x:.4
+            RoundButton:
+                id: ok_button
+                text:"OK"
+                size_hint:None,None
+                font_size: '14dp'
+                height:30
+                width:60
+                on_release: root.ok_pressed()
+            Label:
+                size_hint_x:.4
+        Label:
+            size_hint_y:.2
+
+
+<MyPopupPersonInfo>:
+    title_font: font_regular
+    title_color: normal_text_color
+    size_hint: None, None
+    size: 600, 400
+    background: './Graphics/Images/pressed.jpg'
+    separator_color: header_text_color
+    BoxLayout:
+        orientation: 'vertical'
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint: 1,1
+            BoxLayout:
+                #vertical layout - contains model info headers
+                id: person_infos
+                orientation:'vertical'
+                size_hint_y: 1
+
+                Label:
+                    size_hint_y: 0.5
+
+
+                BoxLayout:
+                    orientation:'horizontal'
+                    size_hint_y: None
+                    height: 30
+                    Label:
+                        text:"Name:  "
+                        size_hint_x: 0.8
+                        text_size: self.size
+                        valign:'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+
+                    Label:
+                        id:person_name
+                        #size_hint_y:None
+                        #height:30
+                        text:'Name'
+                        font_name: font_light
+                        text_size: self.size
+                        valign:'middle'
+                        halign:'left'
+                        color: normal_text_color
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: 30
+                    orientation:'horizontal'
+                    Label:
+                        text:"Age:  "
+                        size_hint_x: 0.8
+                        text_size: self.size
+                        valign:'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+
+
+                    Label:
+                        id:person_age
+                        text:'Age'
+                        font_name: font_light
+                        text_size: self.size
+                        valign:'middle'
+                        halign:'left'
+                        color: normal_text_color
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: 30
+                    orientation:'horizontal'
+                    Label:
+                        text:"Gender:  "
+                        size_hint_x: 0.8
+                        text_size: self.size
+                        valign:'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+
+                    Label:
+                        id:person_gender
+                        text:'Gender'
+                        font_name: font_light
+                        text_size: self.size
+                        valign:'middle'
+                        halign:'left'
+                        color: normal_text_color
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: 30
+                    orientation:'horizontal'
+                    Label:
+                        text:"Nationality:  "
+                        size_hint_x: 0.8
+                        text_size: self.size
+                        valign:'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+
+                    Label:
+                        id:nationality
+                        text:'Nationality'
+                        font_name: font_light
+                        text_size: self.size
+                        valign:'middle'
+                        halign:'left'
+                        color: normal_text_color
+
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: 40
+                    orientation:'horizontal'
+                    Label:
+                        text:"Details:  "
+                        size_hint_x: 0.8
+                        multiline:True
+                        text_size: self.size
+                        valign:'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+
+                    ScrollView:
+                        Label:
+                            id:details
+                            height: self.texture_size[1]
+                            width: self.texture_size[0]
+                            text:'Details'
+                            font_name: font_light
+                            text_size: self.width, None
+                            size_hint: (1,None)
+                            valign:'middle'
+                            halign:'left'
+                            color: normal_text_color
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: 30
+                    orientation:'horizontal'
+                    Label:
+                        text:"Contact phone:  "
+                        size_hint_x: 0.8
+                        text_size: self.size
+                        valign:'middle'
+                        halign:'right'
+                        color: header_text_color
+                        font_name: font_light
+
+                    Label:
+                        id:contact_phone
+                        text:'Contact phone'
+                        font_name: font_light
+                        text_size: self.size
+                        valign:'middle'
+                        halign:'left'
+                        color: normal_text_color
+                Label:
+
+
+            BoxLayout:
+                pos_hint: {'top': 1}
+                orientation:'vertical'
+
+                BoxLayout:
+                    id: photo_preview_box
+                    orientation:'vertical'
+                    size_hint_y: 2
+
+                    Label:
+                        size_hint_y:None
+                        height:10
+
+                    ImageButton:
+                        anchor_x: 'center'
+                        anchor_y: 'center'
+                        id:preview_photo
+                        source: './Graphics/Images/default-user-original.png'
+                        allow_stretch: True
+                        #size_hint_y:None
+                        keep_ratio:True
+                        on_press: root.popup_photo()
+                        #height:50
+                    Label:
+                        id:preview_photo_name
+                        size_hint_y:None
+                        height:30
+                        text:'1.jpg (1/24)'
+                        color: normal_text_color
+                        font_name: font_light
+                        text_size: self.size
+                        halign:'center'
+                        valign:'center'
+                        center_y: preview_photo.center_y-preview_photo.height/2 + 35
+                        center_x: preview_photo.center_x
+                        font_size: '13sp'
+
+
+                    BoxLayout: #next/previous photo button box
+                        orientation: 'horizontal'
+                        size_hint_y:None
+                        height:40
+                        BoxLayout: #ok and nok results box
+                            orientation: 'vertical'
+
+                        RoundButton:
+                            id: previous_photo_btn
+                            text:"<"
+                            size_hint_x:.25
+                            size_hint_y:None
+                            height:30
+                            pos_hint: {'top': 1}
+                            on_release:
+                                root.previous_photo()
+                        Label:
+                            size_hint_x:None
+                            width:10
+                        RoundButton:
+                            id: next_photo_btn
+                            text:">"
+                            size_hint_x:.25
+                            size_hint_y:None
+                            height:30
+                            pos_hint: {'top': 1}
+                            on_release:
+                                root.next_photo()
+                        Label:
+
+        Label:
+            size_hint_y:None
+            height:10
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: 15
+            Label:
+                size_hint_x:.4
+            RoundButton:
+                id: ok_button
+                text:"OK"
+                size_hint:None,None
+                font_size: '14dp'
+                height:30
+                width:60
+                background_normal: './Graphics/Images/yellow.jpg'
+                on_release: root.ok_pressed()
+            Label:
+                size_hint_x:.4
+        Label:
+            size_hint_y:None
+            height: 20
+
+
+<MyPopupAskPerson>:
+    title_font: font_regular
+    title_color: normal_text_color
+    size_hint: None, None
+    size: 400, 120
+    background: './Graphics/Images/pressed.jpg'
+    separator_color: header_text_color
+    BoxLayout:
+        orientation: 'vertical'
+        Label:
+            size_hint_y:.2
+        BoxLayout:
+            orientation: 'horizontal'
+            Label:
+                size_hint_x:.4
+            YesButtonRed:
+                id: yes_button
+                text:"Yes"
+                size_hint:None,None
+                font_size: '14dp'
+                height:30
+                width:80
+                background_normal:'./Graphics/Images/red.jpg'
+                on_release: root.yes_pressed()
+            Label:
+                size_hint_x:.1
+
+            RoundButton:
+                id: no_button
+                text:"No"
+                size_hint:None,None
+                font_size: '14dp'
+                height:30
+                width:80
+                on_release: root.no_pressed()
+            Label:
+                size_hint_x:.4
+        Label:
+            size_hint_y:.2
+
+<MyPopupAskModel>:
+    title_font: font_regular
+    title_color: normal_text_color
+    size_hint: None, None
+    size: 400, 120
+    background: './Graphics/Images/pressed.jpg'
+    separator_color: header_text_color
+    BoxLayout:
+        orientation: 'vertical'
+        Label:
+            size_hint_y:.2
+        BoxLayout:
+            orientation: 'horizontal'
+            Label:
+                size_hint_x:.4
+            YesButtonRed:
+                id: yes_button
+                text:"Yes"
+                size_hint:None,None
+                font_size: '14dp'
+                height:30
+                width:80
+                background_normal:'./Graphics/Images/red.jpg'
+                on_release: root.yes_pressed()
+            Label:
+                size_hint_x:.1
+
+            RoundButton:
+                id: no_button
+                text:"No"
+                size_hint:None,None
+                font_size: '14dp'
+                height:30
+                width:80
+                on_release: root.no_pressed()
+            Label:
+                size_hint_x:.4
+        Label:
+            size_hint_y:.2
+
+<MyPopupWarn>:
+    title_font: font_regular
+    title_color: normal_text_color
+    size_hint: None, None
+    size: 300, 120
+    background: './Graphics/Images/pressed.jpg'
+    separator_color: header_text_color
+    BoxLayout:
+        orientation: 'vertical'
+        Label:
+            size_hint_y:.2
+        BoxLayout:
+            orientation: 'horizontal'
+            Label:
+                size_hint_x:.4
+            OkButtonRed:
+                id: ok_button
+                text:"OK"
+                size_hint:None,None
+                font_size: '14dp'
+                height:30
+                width:60
+                background_normal: './Graphics/Images/yellow.jpg'
+                on_release: root.ok_pressed()
+            Label:
+                size_hint_x:.4
+        Label:
+            size_hint_y:.2
