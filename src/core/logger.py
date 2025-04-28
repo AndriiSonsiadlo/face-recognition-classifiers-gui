@@ -28,7 +28,7 @@ class AppLogger:
 
         # Shared formatter
         self.formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
+            '[%(levelname)-7s] %(asctime)s - %(name)s - [%(filename)s:%(lineno)d] - %(message)s'
         )
 
         # File handler
@@ -43,14 +43,15 @@ class AppLogger:
 
         AppLogger._handlers_initialized = True
 
-    def get_logger(self, name: str = "AIApp"):
+    def get_logger(self, name: str = "AIApp") -> logging.Logger:
         """Return a named logger with shared handlers attached."""
         logger = logging.getLogger(name)
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(logging.INFO)
 
-        # Attach shared handlers only once per logger
-        if not logger.handlers:
-            logger.addHandler(self.file_handler)
-            logger.addHandler(self.console_handler)
+        logger.handlers.clear()
+
+        logger.addHandler(self.file_handler)
+        logger.addHandler(self.console_handler)
 
         return logger
+
