@@ -5,48 +5,19 @@ from typing import Set, List, Dict
 from pydantic import BaseModel, validator
 
 
-# ============================================================
-# Path Configuration
-# ============================================================
-
 class PathConfig(BaseModel):
-    BASE_DIR: Path = Path(__file__).parent.parent
-    SRC_DIR: Path = BASE_DIR.parent
+    BASE_DIR: Path = Path(__file__).parent.parent.parent
+    SRC_DIR: Path = BASE_DIR / "src"
 
     PERSON_DATA_DIR: Path = BASE_DIR / "person_data"
     MODEL_DATA_DIR: Path = BASE_DIR / "model_data"
     TEMP_DIR: Path = BASE_DIR / "temp"
     STATS_DIR: Path = BASE_DIR / "statistics"
     ASSETS_DIR: Path = SRC_DIR / "assets"
+    LOGS_DIR: Path = BASE_DIR / "logs"
 
-    # file_person_list_pkl: str = "person_list.pkl"
-    # filename_model_list_pkl: str = "model_list.pkl"
-
-    # ============================================================
-    # Person Configuration
-    # ============================================================
-
-    def get_dir_person_data(self, person_name: str) -> Path:
-        return self.PERSON_DATA_DIR / person_name
-
-    def get_dir_person_photo(self, person_name: str) -> Path:
-        return self.get_dir_person_data(person_name) / "photos"
-
-    def get_file_person_metadata(self, person_name: str) -> Path:
-        return self.get_dir_person_data(person_name) / "metadata.json"
-
-    # ============================================================
-    # Model Configuration
-    # ============================================================
-
-    def get_dir_model_data(self, model_name: str) -> Path:
-        return self.MODEL_DATA_DIR / model_name
-
-    def get_file_model_metadata(self, model_name: str) -> Path:
-        return self.get_dir_model_data(model_name) / "metadata.json"
-
-    def get_file_model(self, model_name: str) -> Path:
-        return self.get_dir_model_data(model_name) / "model.clf"
+    class Config:
+        arbitrary_types_allowed = True
 
 
 # ============================================================
@@ -79,28 +50,25 @@ class UIConfig(BaseModel):
 
 class PersonConfig(BaseModel):
     ALLOWED_EXTENSIONS: Set[str] = {"png", "jpg", "jpeg", "bmp", "tiff"}
+    MAX_PHOTO_SIZE_MB = 50
     DEFAULT_COUNT_PHOTOS: int = 1
     DEFAULT_COUNT_FRAME: int = 5
+    MIN_PHOTOS_FOR_TRAINING: int = 1
 
     def validate_image(self, file_path: str) -> bool:
         ext = Path(file_path).suffix.lower().lstrip('.')
         return ext in self.ALLOWED_EXTENSIONS
 
 
-# ============================================================
-# Machine Learning Model Configuration
-# ============================================================
-
 class ModelConfig(BaseModel):
     DEFAULT_THRESHOLD: float = 0.5
+    DEFAULT_N_NEIGHBORS: int = 5
+    DEFAULT_WEIGHT: str = "distance"
+    DEFAULT_GAMMA: str = "scale"
 
     ALGORITHM_KNN: str = "KNN Classification"
     ALGORITHM_SVM: str = "SVM Classification"
 
-
-# ============================================================
-# Statistics Configuration
-# ============================================================
 
 class StatisticsConfig(BaseModel):
     FILE_STATS_PLOT: Path = PathConfig().STATS_DIR / "plot.png"
@@ -108,18 +76,10 @@ class StatisticsConfig(BaseModel):
     FILE_RESULT_PLOT: Path = PathConfig().STATS_DIR / "result.png"
 
 
-# ============================================================
-# Image Assets Configuration
-# ============================================================
-
 class ImageAssetConfig(BaseModel):
-    CAMERA_DISABLED_IMAGE: Path = PathConfig().ASSETS_DIR / "camera_off_2.png"
-    DEFAULT_USER_IMAGE: Path = PathConfig().ASSETS_DIR / "default-user.png"
+    CAMERA_DISABLED_IMAGE: Path = PathConfig().ASSETS_DIR / "images" / "camera_off_2.png"
+    DEFAULT_USER_IMAGE: Path = PathConfig().ASSETS_DIR / "images" / "default-user.png"
 
-
-# ============================================================
-# Main Aggregated Configuration
-# ============================================================
 
 class MainConfig(BaseModel):
     paths: PathConfig = PathConfig()
@@ -140,6 +100,7 @@ class MainConfig(BaseModel):
         os.makedirs(v.MODEL_DATA_DIR, exist_ok=True)
         os.makedirs(v.TEMP_DIR, exist_ok=True)
         os.makedirs(v.STATS_DIR, exist_ok=True)
+        os.makedirs(v.LOGS_DIR, exist_ok=True)
 
         return v
 
@@ -148,6 +109,9 @@ class MainConfig(BaseModel):
 
     def get_model_path(self, model_name: str) -> Path:
         return self.paths.MODEL_DATA_DIR / model_name
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
 config = MainConfig()
