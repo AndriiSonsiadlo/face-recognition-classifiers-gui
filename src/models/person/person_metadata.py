@@ -12,9 +12,9 @@ logger = AppLogger().get_logger(__name__)
 
 class PersonMetadata(BaseModel):
     name: str
-    gender: Gender
+    gender: Gender = Gender.MALE
     age: NonNegativeInt
-    nationality: str = ""
+    nationality: str = "N/A"
     details: str = ""
     contact_phone: str = "N/A"
 

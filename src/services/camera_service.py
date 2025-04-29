@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 
 import cv2
 
-from utils.logger import AppLogger
+from core.logger import AppLogger
 
 logger = AppLogger().get_logger(__name__)
 
@@ -31,16 +31,16 @@ class CameraService:
         self.frames: "queue.Queue[Tuple[bool, Optional[object]]]" = queue.Queue(maxsize=queue_size)
         self._lock = threading.Lock()
 
-    def start(self) -> None:
+    def start(self, port) -> None:
         with self._lock:
             if self._running.is_set():
                 logger.debug("CameraService already running")
                 return
 
-            logger.debug("Opening VideoCapture on port %s", self.port)
+            logger.debug("Opening VideoCapture on port %s", port or self.port)
             self._capture = cv2.VideoCapture(self.port, cv2.CAP_DSHOW)
             if not self._capture.isOpened():
-                raise CameraError(f"Unable to open camera on port {self.port}")
+                raise CameraError(f"Unable to open camera on port {port or self.port}")
 
             self._running.set()
             self._thread = threading.Thread(target=self._run, name="CameraReadThread", daemon=True)
