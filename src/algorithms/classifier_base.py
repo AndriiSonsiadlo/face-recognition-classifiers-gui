@@ -14,7 +14,7 @@ from sklearn import metrics
 
 from algorithms.face_encoding import FaceEncoding
 from core import config
-from utils.logger import AppLogger
+from core.logger import AppLogger
 
 logger = AppLogger().get_logger(__name__)
 

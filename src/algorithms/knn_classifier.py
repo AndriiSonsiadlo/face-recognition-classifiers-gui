@@ -1,11 +1,11 @@
 import math
 from pathlib import Path
-from typing import Tuple, Optional
+from typing import Optional
 
 import numpy as np
 
 from algorithms.classifier_base import ClassifierBase
-from utils.logger import AppLogger
+from core.logger import AppLogger
 
 logger = AppLogger().get_logger(__name__)
 
@@ -19,7 +19,7 @@ class KNNClassifier(ClassifierBase):
         self.n_neighbors = n_neighbors
         self.weight = weight if weight in ("distance", "uniform") else "distance"
         self.knn_algo = "ball_tree"
-        self.threshold = 0.6  # Distance threshold for matching
+        self.threshold = 0.6
 
     def train(self) -> bool:
         """Train KNN classifier."""
@@ -31,11 +31,10 @@ class KNNClassifier(ClassifierBase):
             logger.warning("No face encodings found in training data")
             return False
 
-        X_train, y_train = self._prepare_training_data()
+        x_train, y_train = self._prepare_training_data()
 
-        # Auto-determine number of neighbors
         if self.n_neighbors is None or self.n_neighbors < 1:
-            self.n_neighbors = int(round(math.sqrt(len(X_train))))
+            self.n_neighbors = int(round(math.sqrt(len(x_train))))
             logger.info(f"Auto-selected n_neighbors: {self.n_neighbors}")
 
         try:
@@ -45,7 +44,7 @@ class KNNClassifier(ClassifierBase):
                 algorithm=self.knn_algo,
                 weights=self.weight
             )
-            self.classifier.fit(X_train, y_train)
+            self.classifier.fit(x_train, y_train)
 
             if self.test_data:
                 self.evaluate()
@@ -62,11 +61,16 @@ class KNNClassifier(ClassifierBase):
         if self.classifier is None:
             raise ValueError("Classifier not trained")
 
-        distances, indices = self.classifier.kneighbors([encoding], n_neighbors=1)
+        try:
+            distances, indices = self.classifier.kneighbors([encoding], n_neighbors=1)
 
-        if distances[0][0] <= self.threshold:
-            return self.classifier.predict([encoding])[0]
-        else:
+            if distances[0][0] <= self.threshold:
+                return self.classifier.predict([encoding])[0]
+            else:
+                return self.UNKNOWN_LABEL
+
+        except Exception as e:
+            logger.exception(f"Error predicting with KNN: {e}")
             return self.UNKNOWN_LABEL
 
     def set_threshold(self, threshold: float) -> None:
@@ -74,3 +78,4 @@ class KNNClassifier(ClassifierBase):
         if not 0 <= threshold <= 1:
             raise ValueError("Threshold must be between 0 and 1")
         self.threshold = threshold
+        logger.info(f"Set KNN threshold to {threshold}")

@@ -1,7 +1,7 @@
 from core import config
 from algorithms.knn_classifier import KNNClassifier
 from algorithms.svm_classifier import SVMClassifier
-from utils.logger import AppLogger
+from core.logger import AppLogger
 
 logger = AppLogger().get_logger(__name__)
 

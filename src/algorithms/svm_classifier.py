@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 
 from algorithms.classifier_base import ClassifierBase
-from utils.logger import AppLogger
+from core.logger import AppLogger
 
 logger = AppLogger().get_logger(__name__)
 
@@ -47,5 +47,9 @@ class SVMClassifier(ClassifierBase):
         if self.classifier is None:
             raise ValueError("Classifier not trained")
 
-        prediction = self.classifier.predict([encoding])[0]
-        return prediction
+        try:
+            prediction = self.classifier.predict([encoding])[0]
+            return prediction
+        except Exception as e:
+            logger.exception(f"Error predicting with SVM: {e}")
+            return self.UNKNOWN_LABEL
