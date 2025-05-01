@@ -75,8 +75,8 @@
                         valign:'middle'
                         color: normal_text_color
                         font_name: font_light
-                        background_normal:'./Graphics/Images/light_grey.jpg'
-                        background_down: './Graphics/Images/pressed.jpg'
+                        background_normal:'assets/images/light_grey.jpg'
+                        background_down: 'assets/images/pressed.jpg'
                         values: root.get_values()
                         on_text: root.on_spinner_select(model_name.text)
                         option_cls: Factory.get("MySpinnerOption")
@@ -415,7 +415,7 @@
                             text:"Delete"
                             disabled_color: normal_text_color
                         Image:
-                            source: './Graphics/Images/delet_this.png'
+                            source: 'assets/images/delet_this.png'
                             center_y: delete_btn_text.center_y/1.05
                             center_x: delete_btn_text.center_x
                             size_hint_y:None
@@ -449,7 +449,7 @@
                             disabled_color: normal_text_color
 
                         Image:
-                            source: './Graphics/Images/editv2.png'
+                            source: 'assets/images/editv2.png'
                             center_y: edit_btn_text.center_y/1.05
                             center_x: edit_btn_text.center_x
                             size_hint_y:None
@@ -479,7 +479,7 @@
                             text:"Create new"
 
                         Image:
-                            source: './Graphics/Images/add.png'
+                            source: 'assets/images/add.png'
                             center_y: create_btn_text.center_y/1.05
                             center_x: create_btn_text.center_x
                             size_hint_y:None
