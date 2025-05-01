@@ -1,5 +1,3 @@
-# Copyright (C) 2021 Andrii Sonsiadlo
-
 import os
 import re
 
@@ -9,6 +7,7 @@ from kivy.uix.screenmanager import Screen
 from Popup.my_popup_ask import MyPopupAskPerson
 from _const._customization import no_elements_text
 from classes.Popup.plot_popup import PlotPopup
+from core import config
 from person.person import Person
 from person.person_list import PersonList
 
@@ -133,7 +132,7 @@ class WantedPerson(Screen):
 			self.delete_preview_photo()
 
 	def delete_preview_photo(self):
-		self.ids.preview_photo.source = './Graphics/Images/default-user-original.png'
+		self.ids.preview_photo.source = str(config.images.DEFAULT_USER_IMAGE)
 		self.ids.preview_photo_name.text = '(0/0)'
 
 	def disable_button(self, button):

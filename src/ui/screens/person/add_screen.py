@@ -16,10 +16,10 @@ from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import Screen
 
 from Popup.my_popup_warn import MyPopupWarn
-from _const._directory import *
 from classes.Popup.my_popup_info import MyPopupInfo
 from classes.Popup.plot_popup import PlotPopup
 from classes.person.person import Person
+from core import config
 from person.person_list import PersonList
 from functions.get_image_dimensions import get_crop_dims
 
@@ -109,7 +109,7 @@ class AddPerson(Screen):
 				self.set_default_image()
 
 	def set_default_image(self):
-		self.ids.preview_photo.source = default_user_image
+		self.ids.preview_photo.source = str(config.images.DEFAULT_USER_IMAGE)
 		self.ids.preview_photo_name.text = '(0/0)'
 		self.ids.num_files.opacity = 0
 		self.ids.add_photo_icon.opacity = 0.6
@@ -189,7 +189,7 @@ class AddPerson(Screen):
 
 				self.clear_inputs()
 
-				self.show_popup_info(title="Person have added to a list wanted persons")
+				self.show_popup_info(title="Person has been added to a registry")
 			except:
 				self.show_popup_warn(title="Error")
 
@@ -298,7 +298,7 @@ class AddPerson(Screen):
 		self.ids.create_person_details.text = ''
 		self.ids.create_contact_phone.text = ''
 
-		self.ids.preview_photo.source = default_user_image
+		self.ids.preview_photo.source = str(config.images.DEFAULT_USER_IMAGE)
 		self.ids.preview_photo_name.text = '(0/0)'
 		self.ids.num_files.opacity = 0
 		self.ids.add_photo_icon.opacity = 0.6

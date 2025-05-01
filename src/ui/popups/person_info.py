@@ -6,6 +6,7 @@ from kivy.clock import mainthread
 from kivy.uix.popup import Popup
 
 from Popup.plot_popup import PlotPopup
+from core import config
 from person.person import Person
 
 
@@ -60,7 +61,7 @@ class PersonInfoPopup(Popup):
 			self.delete_preview_photo()
 
 	def delete_preview_photo(self):
-		self.ids.preview_photo.source = './Graphics/Images/default-user-original.png'
+		self.ids.preview_photo.source = str(config.images.DEFAULT_USER_IMAGE)
 		self.ids.preview_photo_name.text = '(0/0)'
 
 	def previous_photo(self):
