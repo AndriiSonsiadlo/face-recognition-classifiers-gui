@@ -1,12 +1,11 @@
 from typing import Optional
-from functools import partial
 
-from kivy.clock import Clock, mainthread
+from kivy.clock import Clock
 
 from algorithms.algorithm_loader import AlgorithmWrapper
 from core.config import ModelConfig, config
-from ui.screens.face_scanner.camera_service import CameraService, CameraError
-from utils.logger import AppLogger
+from core.logger import AppLogger
+from services.camera_service import CameraService, CameraError
 
 logger = AppLogger().get_logger(__name__)
 
@@ -24,7 +23,8 @@ class WebCameraPresenter:
 
     POLL_INTERVAL = 1.0 / 30.0  # fallback poll interval
 
-    def __init__(self, view, camera_service: CameraService, model_config: Optional[ModelConfig] = None):
+    def __init__(self, view, camera_service: CameraService,
+                 model_config: Optional[ModelConfig] = None):
         self.view = view
         self.camera_service = camera_service
         self.model_config = model_config
@@ -40,7 +40,7 @@ class WebCameraPresenter:
                     self.view.show_error("Failed to load ML model")
                     return
 
-            self.camera_service.start()
+            self.camera_service.start(None)
             # schedule a poller on the Kivy main loop that will pull frames
             self._scheduled_event = Clock.schedule_interval(self._poll_frame, self.POLL_INTERVAL)
             self.view.on_camera_started()
@@ -86,4 +86,3 @@ class WebCameraPresenter:
                 self.view.reset_identification()
         except Exception:
             logger.exception("Error updating view with prediction")
-

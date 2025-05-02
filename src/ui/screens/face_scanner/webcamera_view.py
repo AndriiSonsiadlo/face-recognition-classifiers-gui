@@ -1,11 +1,11 @@
 import cv2
+from kivy.clock import mainthread
 from kivy.core.image import Image as CoreImage
 from kivy.graphics.texture import Texture
 from kivy.uix.image import Image
-from kivy.clock import mainthread
 
 from core import config
-from utils.logger import AppLogger
+from core.logger import AppLogger
 
 logger = AppLogger().get_logger(__name__)
 
@@ -20,7 +20,7 @@ class WebCameraView(Image):
 
     def clear_texture(self):
         try:
-            self.texture = CoreImage(config.images.camera_off_path_image).texture
+            self.texture = CoreImage(str(config.images.CAMERA_DISABLED_IMAGE)).texture
         except Exception:
             logger.exception("Failed to set default texture")
 
@@ -89,4 +89,3 @@ class WebCameraView(Image):
     def show_error(self, message: str):
         logger.error("View error: %s", message)
         # Optionally show a popup; left to integrator
-
