@@ -1,436 +1,519 @@
-# Copyright (С) 2021 Andrii Sonsiadlo
-
 import csv
-import os
 import shutil
 import threading
-import tkinter as tk
-from os import path
-from tkinter import filedialog
+from datetime import datetime
+from typing import Optional
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+from kivy.clock import mainthread
 from kivy.core.image import Texture
 from matplotlib.ticker import MaxNLocator
 
-from algorithms.knn_classifier import KNNClassifier
-from algorithms.svm_classifier import SVMClassifier
-from core import config
-from model.model_list import ModelList
-from person.person import Person
-from person.person_list import PersonList
+from core.config import config
+from core.logger import AppLogger
+from models.model.model_metadata import ModelMetadata
+from services import camera_service, model_service, person_service
 from ui.base_screen import BaseScreen
-from ui.popups.person_info import PersonInfoPopup
-from ui.popups.warn import WarnPopup
-from ui.popups.plot import PlotPopup
-from ui.screens.face_scanner.webcamera import WebCamera
-from utils.get_time import getTime
+from ui.presenters.face_scanner_presenter import FaceScannerPresenter
+from ui.screens.face_scanner.camera_presenter import WebCameraPresenter
 
-face_scanner_screen = None
+logger = AppLogger().get_logger(__name__)
 
 
 class FaceScanner(BaseScreen):
-    loaded_image = None
-    model_name = "N/A"
-    camera_selected = ""
+    """Face Scanner screen - main scanning and recognition interface."""
 
-    LOADED = 0x1
-    UNLOADED = 0x0
-    photo_status = UNLOADED
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.presenter = FaceScannerPresenter(view=self)
+        self.camera_presenter = WebCameraPresenter(self.ids.camera, camera_service)
 
-    def __init__(self, **kw):
-        super().__init__(**kw)
+        self.loaded_image: Optional[np.ndarray] = None
+        self.selected_model: Optional[ModelMetadata] = None
+        self.camera_selected = ""
 
-        self.model_load_list()
-        self.person_load_list()
+        self.person_service = person_service
+        self.model_service = model_service
+        self.camera_service = camera_service
 
+        self._initialize()
+
+    def _initialize(self) -> None:
+        """Initialize screen resources."""
         try:
-            if path.exists(config.paths.TEMP_DIR):
+            if config.paths.TEMP_DIR.exists():
                 shutil.rmtree(config.paths.TEMP_DIR)
-            os.mkdir(config.paths.TEMP_DIR)
+            config.paths.TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
-            if not os.path.exists(config.stats.FILE_STATS_CSV):
-                open(config.stats.FILE_STATS_CSV, 'tw', encoding='utf-8').close()
+            if not config.stats.FILE_STATS_CSV.exists():
+                config.stats.FILE_STATS_CSV.parent.mkdir(parents=True, exist_ok=True)
+                config.stats.FILE_STATS_CSV.touch()
 
-        except BaseException:
-            pass
+            self.presenter.start()
+            if available_models := self.model_service.registry.items:
+                self.selected_model = available_models[0]
+            logger.info("FaceScanner initialized")
+        except Exception as e:
+            logger.exception(f"Error initializing FaceScanner: {e}")
+            self.show_error("Initialization Error", str(e))
 
-    def refresh(self):  # update screen
-        self.ids.number_people_database_text.text = self.set_text_number_in_base()
-        self.model_list = ModelList()
-        self.ids.model_name.values = self.get_values_model()
+    def refresh(self) -> None:
+        """Called when screen is entered - update UI."""
+        try:
+            self.model_service.refresh()
+            self.ids.model_name.values = self.presenter.get_available_models()
+            self.ids.number_people_database_text.text = str(self.presenter.get_person_count())
 
-        self.person_list.get_list()
+            self._update_plot()
+        except Exception as e:
+            logger.exception("Error refreshing FaceScanner")
+            self.show_error("Refresh Error", str(e))
 
-    def camera_on_off(self):
-        thread = threading.Thread(target=self.toggle_camera, daemon=True)
+    # ============================================================
+    # Camera Controls
+    # ============================================================
+
+    def camera_on_off(self) -> None:
+        """Toggle camera on/off."""
+        thread = threading.Thread(target=self._toggle_camera, daemon=True)
         thread.start()
 
-    def toggle_camera(self):
-        if self.photo_status:
-            self.clear_photo()
-        self.person_list.read_from_file()
-        self.disable_button(self.ids.identification_btn)
-        WebCamera.on_off(self.ids.camera, self, self.model_list.get_selected(),
-                         self.camera_selected)
+    @mainthread
+    def _toggle_camera(self) -> None:
+        """Background thread for camera toggle."""
+        try:
+            if self.loaded_image:
+                self._clear_photo()
 
-    def clear_photo(self):
-        self.photo_status = self.UNLOADED
-        self.ids.load_image_btn.text = config.ui.TEXTS["load_photo"]
-        WebCamera.clear_texture(self.ids.camera)
+            self.person_service.refresh()
+            self._disable_button(self.ids.identification_btn)
 
-    def load_photo(self):
-        if self.photo_status:
-            self.clear_photo()
-            self.disable_button(self.ids.identification_btn)
-            return
+            # Start/stop camera via presenter
+            if self.camera_service.is_running():
+                self.presenter.stop_camera()
+            else:
+                camera_port = int(self.camera_selected.split()[-1])
+                self.presenter.start_camera(camera_port, self.selected_model)
 
-        root = tk.Tk()
-        root.withdraw()
+        except Exception as e:
+            logger.exception("Error toggling camera")
+            self.show_error("Camera Error", str(e))
 
-        # setting extensions for searching images in explorer
-        photo_paths = filedialog.askopenfilenames(filetypes=[("Image files", ".jpeg .jpg .png")])
-        if photo_paths:
-            # every photo is checking, then path is adding to a list of photos
-            for img in photo_paths:
-                img_path_lower = img.lower()
-                if not os.path.isfile(img_path_lower) or os.path.splitext(img_path_lower)[1][
-                    1:] not in config.person.ALLOWED_EXTENSIONS:
-                    raise Exception("Invalid image path: {}".format(img_path_lower))
+    def _clear_photo(self) -> None:
+        """Clear loaded photo."""
+        try:
+            self.ids.load_image_btn.text = config.ui.TEXTS["load_photo"]
+            self.ids.camera.texture = None
+            self.loaded_image = None
+            self._disable_button(self.ids.identification_btn)
+        except Exception as e:
+            logger.exception("Error clearing photo")
 
-                model = self.model_list.get_selected()
-                if model is None:
-                    continue
-                elif model.algorithm == config.model.ALGORITHM_KNN:
-                    algorithm = KNNClassifier(model, model.path_file_model)
-                elif model.algorithm == config.model.ALGORITHM_SVM:
-                    algorithm = SVMClassifier(model, model.path_file_model)
-                else:
-                    continue
+    # ============================================================
+    # Photo Loading
+    # ============================================================
 
-                is_loaded = algorithm.load_model()
-                if is_loaded:
-                    frame, name = algorithm.predict_image(img)
+    def load_photo(self) -> None:
+        """Load photo from file."""
+        try:
+            import tkinter as tk
+            from tkinter import filedialog
 
-                    buf1 = cv2.flip(frame, 0)
-                    buf = buf1.tostring()
-                    image_texture = Texture.create(size=(frame.shape[1], frame.shape[0]),
-                                                   colorfmt="rgb")
-                    image_texture.blit_buffer(buf, colorfmt="rgb", bufferfmt="ubyte")
+            if self.loaded_image:
+                self._clear_photo()
+                self._disable_button(self.ids.identification_btn)
+                return
 
-                    WebCamera.set_texture(self.ids.camera, image_texture)
-                    print(name)
+            root = tk.Tk()
+            root.withdraw()
+
+            photo_paths = filedialog.askopenfilenames(
+                filetypes=[("Image files", ".jpeg .jpg .png")]
+            )
+
+            if photo_paths:
+                image_path = photo_paths[0]
+                result = self.presenter.load_photo(image_path)
+
+                if result:
+                    frame, name = result
+                    self._display_image(frame)
+
                     if name.lower() == config.ui.TEXTS["unknown"].lower():
-                        self.disable_button(button=self.ids.identification_btn)
+                        self._disable_button(self.ids.identification_btn)
                     else:
-                        self.enable_button(button=self.ids.identification_btn, name=name)
+                        self._enable_button(self.ids.identification_btn, name)
 
                     self.ids.load_image_btn.text = config.ui.TEXTS["clear_photo"]
-                    self.photo_status = self.LOADED
-                else:
-                    return
+                    self.loaded_image = frame
 
-        self.get_root_window().raise_window()
+            self.get_root_window().raise_window()
 
-    # get names of the model dropdown menu
-    def get_values_model(self):
-        values = []
+        except Exception as e:
+            logger.exception("Error loading photo")
+            self.show_error("Load Photo Error", str(e))
 
-        if self.model_list.is_empty():
-            values.append("N/A")
-            self.ids.number_people_model_text.text = "N/A"
-            self.ids.model_name.text = values[0]
-        else:
-            for item in self.model_list.get_list():
-                values.append(item.name)
-            model = self.model_list.get_selected()
-            if model is None:  # show last model if none has been selected
-                model = self.model_list.get_list()[-1]
-                self.model_list.set_selected(model.name)
-            self.set_model_data(model)
-        return values
+    def _display_image(self, frame: np.ndarray) -> None:
+        """Display image in camera widget.
 
-    def set_text_camera_spinner(self):
+        Args:
+            frame: Image frame to display
+        """
+        try:
+            buf = cv2.flip(frame, 0).tobytes()
+            texture = Texture.create(
+                size=(frame.shape[1], frame.shape[0]),
+                colorfmt="rgb"
+            )
+            texture.blit_buffer(buf, colorfmt="rgb", bufferfmt="ubyte")
+            self.ids.camera.texture = texture
+        except Exception as e:
+            logger.exception("Error displaying image")
+
+    # ============================================================
+    # Model Selection
+    # ============================================================
+
+    def on_spinner_model_select(self, model_name: str) -> None:
+        try:
+            self.selected_model = self.model_service.get_model(model_name)
+            self.ids.number_people_model_text.text = str(len(self.selected_model.train_dataset_Y))
+        except Exception as e:
+            logger.exception(f"Error selecting model {model_name}")
+
+    # ============================================================
+    # Camera Selection
+    # ============================================================
+
+    def set_text_camera_spinner(self) -> str:
         self.camera_selected = config.CAMERA_PORTS[0]
         return self.camera_selected
 
-    def on_spinner_camera_select(self, camera):
+    def get_values_camera(self) -> list:
+        return config.CAMERA_PORTS if config.CAMERA_PORTS else ["N/A"]
+
+    def on_spinner_camera_select(self, camera: str) -> None:
         self.camera_selected = camera
 
-    def get_values_camera(self):
-        if config.CAMERA_PORTS:
-            return config.CAMERA_PORTS
-        else:
-            return ["N/A"]
+    # ============================================================
+    # Statistics
+    # ============================================================
 
-    def on_spinner_model_select(self, name):
-        model = self.model_list.find_first(name)
-        if model is not None:
-            self.model_list.set_selected(model.name)
-            self.set_model_data(model)
+    def read_plot(self) -> str:
+        """Read and generate statistics plot.
 
-    def set_model_data(self, model):
-        self.ids.model_name.text = model.name
-        self.ids.number_people_model_text.text = str(model.count_train_Y)
-        print("Loaded model:", model.name, model.created, model.author, model.comment,
-              model.path_model_data)
-
-    def model_load_list(self):
-        self.model_list = ModelList()
-        self.model_list.update_model_list()
-
-    def person_load_list(self):
-        self.person_list = PersonList()
-        self.person_list.update_person_list()
-
-    def set_text_number_in_base(self):
-
-        # self.person_list.update_person_list()
-        # self.person_list.read_from_file()
-        return str(len(PersonList().get_list()))
-
-    def switch_on_person(self, name):
-        if (WebCamera.get_status_camera(self.ids.camera)):
-            WebCamera.clock_unshedule(self.ids.camera)
-
-        person = self.person_list.find_first(name)
-        if person is not None:
-            self.show_popup_person_info(person=person)
-        else:
-            self.show_popup_warm(title=f"{name} not found in database")
-
-    def show_popup_warm(self, title):
-        WarnPopup(text=title).open()
-
-    def show_popup_person_info(self, person: Person):
-        PersonInfoPopup(person=person).open()
-
-    def disable_button(self, button):
-        if button == self.ids.identification_btn:
-            button.text = config.ui.TEXTS["no_elements"]
-            self.disable_button(self.ids.its_ok_btn)
-            self.disable_button(self.ids.its_nok_btn)
-
-        button.disabled = True
-        button.opacity = .5
-
-    def enable_button(self, button, name=''):
-        if button == self.ids.identification_btn:
-            button.text = name
-            self.enable_button(button=self.ids.its_ok_btn)
-            self.enable_button(button=self.ids.its_nok_btn)
-            self.its_add_one()
-        button.disabled = False
-        button.opacity = 1
-
-    def read_plot(self):
-        data_csv = []
-        if os.path.exists(config.stats.FILE_STATS_CSV):
-            with open(config.stats.FILE_STATS_CSV, 'r') as csvfile:
-                file_rd = csv.reader(csvfile, delimiter=',')
-                for (i, row) in enumerate(file_rd):
-                    data_csv.append(row)
-        else:
-            self.clear_stats()
-            return config.stats.FILE_RESULT_PLOT
-
+        Returns:
+            Path to plot image
+        """
         try:
-            len1 = len(data_csv[0])
-        except Exception:
-            self.clear_stats()
-            return config.stats.FILE_RESULT_PLOT
+            data_csv = []
+            if config.stats.FILE_STATS_CSV.exists():
+                with open(config.stats.FILE_STATS_CSV, 'r') as csvfile:
+                    file_rd = csv.reader(csvfile, delimiter=',')
+                    for row in file_rd:
+                        data_csv.append(row)
 
-        if (len1):
-            current_hour = int(getTime("hour"))
-            current_day = int(getTime("day"))
-            current_month = int(getTime("month"))
+            if not data_csv:
+                self._create_blank_plot()
+                return str(config.stats.FILE_RESULT_PLOT)
 
-            range_hours = []
-            range_day = []
+            # Process data and create plot
+            ok_y, nok_y, nnok_y, x = self._process_stats_data(data_csv)
 
-            if (current_hour - 11) < 0:
-                first_hour = 24 - (11 - current_hour)
-                range_day.append(current_day - 1)
-                range_day.append(current_day)
+            if x:
+                self._create_plot(x, ok_y, nok_y, nnok_y)
             else:
-                first_hour = current_hour - 11
-                range_day.append(current_day)
+                self._create_blank_plot()
 
-            #			with open(path_file_stats, "a", newline='') as gen_file:
-            #				writing = csv.writer(gen_file, delimiter=',')
-            #				data = [current_hour, current_day, current_month, 0, 0, 0]
-            #				writing.writerow(data)
+            return str(config.stats.FILE_RESULT_PLOT)
 
-            for hour in range(12):
-                if (first_hour + hour > current_hour) and (first_hour + hour < 24):
-                    range_hours.append(first_hour + hour)
-                elif first_hour + hour >= 24:
-                    range_hours.append((first_hour + hour) - 24)
-                else:
-                    range_hours.append(first_hour + hour)
+        except Exception as e:
+            logger.exception("Error reading plot")
+            self._create_blank_plot()
+            return str(config.stats.FILE_RESULT_PLOT)
 
-            x = []
-            ok_y = []
-            nok_y = []
-            nnok_y = []
+    def _process_stats_data(self, data_csv: list) -> tuple:
+        """Process statistics CSV data.
 
-            for hour in range_hours:
-                ok = 0
-                nok = 0
-                nnok = 0
+        Args:
+            data_csv: CSV data as list of lists
 
-                for element2 in data_csv:
-                    if int(element2[0]) == hour and int(element2[1]) in range_day:
-                        nnok += int(element2[3])
-                        ok += int(element2[4])
-                        nok += int(element2[5])
-                x.append(hour)
-                if nnok - nok - ok < 0:
-                    nnok_y.append(0)
-                else:
-                    nnok_y.append(nnok - nok - ok)
-                nok_y.append(nok)
-                ok_y.append(ok)
+        Returns:
+            Tuple of (ok_y, nok_y, nnok_y, x) lists
+        """
+        now = datetime.now()
+        current_hour = now.hour
+        current_day = now.day
 
-            # for element1 in data_csv:
-            # 	hour = int(element1[0])
-            # 	day = int(element1[1])
-            # 	month = int(element1[2])
-            #
-            # 	if (not hour in black_list) and (hour in range_hours) and (day in range_day) and (month == current_month):
-            # 		black_list.append(hour)
-            # 		ok = 0
-            # 		nok = 0
-            # 		nnok = 0
-            #
-            # 		for element2 in data_csv:
-            # 			if int(element2[0]) == int(hour):
-            # 				nnok += int(element2[3])
-            # 				ok += int(element2[4])
-            # 				nok += int(element2[5])
-            # 		x.append(hour)
-            # 		if nnok-nok-ok < 0:
-            # 			nnok_y.append(0)
-            # 		else:
-            # 			nnok_y.append(nnok-nok-ok)
-            # 		nok_y.append(nok)
-            # 		ok_y.append(ok)
+        range_hours = []
+        if current_hour - 11 < 0:
+            first_hour = 24 - (11 - current_hour)
+        else:
+            first_hour = current_hour - 11
 
+        for hour in range(12):
+            range_hours.append((first_hour + hour) % 24)
+
+        x, ok_y, nok_y, nnok_y = [], [], [], []
+
+        for hour in range_hours:
+            ok, nok, nnok = 0, 0, 0
+            for element in data_csv:
+                try:
+                    if int(element[0]) == hour:
+                        nnok += int(element[3])
+                        ok += int(element[4])
+                        nok += int(element[5])
+                except (ValueError, IndexError):
+                    continue
+
+            x.append(hour)
+            nnok_y.append(max(0, nnok - nok - ok))
+            nok_y.append(nok)
+            ok_y.append(ok)
+
+        return ok_y, nok_y, nnok_y, x
+
+    def _create_plot(self, x: list, ok_y: list, nok_y: list, nnok_y: list) -> None:
+        """Create statistics plot.
+
+        Args:
+            x: X-axis data (hours)
+            ok_y: Correct identifications
+            nok_y: Incorrect identifications
+            nnok_y: No identifications
+        """
+        try:
             series1 = np.array(ok_y)
             series2 = np.array(nok_y)
             series3 = np.array(nnok_y)
 
             index = np.arange(len(x))
+            plt.figure(figsize=(10, 6))
             plt.title('Result of identification (per hour)')
             plt.ylabel('Count of identificated')
             plt.xlabel('Hour')
 
-            plt.bar(index, series1, color="g")
-            plt.bar(index, series2, color="r", bottom=series1)
-            plt.bar(index, series3, color="b", bottom=(series2 + series1))
-            # plt.tight_layout()
+            plt.bar(index, series1, color="g", label="Correct")
+            plt.bar(index, series2, color="r", bottom=series1, label="Incorrect")
+            plt.bar(index, series3, color="b", bottom=(series2 + series1), label="No ID")
+
             plt.xticks(index, x)
             ax = plt.gca()
             ax.yaxis.set_major_locator(MaxNLocator(integer=True))
             ax.grid(axis='y')
+            plt.legend()
+
             plt.savefig(config.stats.FILE_RESULT_PLOT)
-            plt.clf()
+            plt.close()
 
-            self.update_right_plot(config.stats.FILE_RESULT_PLOT)
-        else:
-            self.clear_stats()
+        except Exception as e:
+            logger.exception("Error creating plot")
 
-            self.update_right_plot(config.stats.FILE_RESULT_PLOT)
-        return str(config.stats.FILE_RESULT_PLOT)
+    def _create_blank_plot(self) -> None:
+        """Create blank plot."""
+        try:
+            plt.figure(figsize=(10, 6))
+            plt.title('Result of identification (per hour)')
+            plt.ylabel('Count of identificated')
+            plt.xlabel('Hour')
+            plt.savefig(config.stats.FILE_RESULT_PLOT)
+            plt.close()
+        except Exception as e:
+            logger.exception("Error creating blank plot")
 
-    def clear_stats(self):
-        current_hour = int(getTime("hour"))
-        current_day = int(getTime("day"))
-        current_month = int(getTime("month"))
+    def clear_stats(self) -> None:
+        """Clear statistics."""
+        try:
+            current_hour = TimeUtils.get_hour()
+            current_day = TimeUtils.get_day()
+            current_month = TimeUtils.get_month()
 
-        range_hours = []
+            range_hours = []
+            if current_hour - 11 < 0:
+                first_hour = 24 - current_hour - 11
+            else:
+                first_hour = current_hour - 11
 
-        if (current_hour - 11) < 0:
-            first_hour = 24 - current_hour - 11
+            for hour in range(12):
+                range_hours.append(first_hour + hour)
 
-        else:
-            first_hour = current_hour - 11
-
-        for hour in range(12):
-            range_hours.append(first_hour + hour)
-
-        with open(config.stats.FILE_STATS_CSV, "w", newline='') as gen_file:
-            writing = csv.writer(gen_file, delimiter=',')
-            for hour in range_hours:
-                if hour > current_hour:
-                    data = [hour, current_day - 1, current_month, 0, 0, 0]
+            with open(config.stats.FILE_STATS_CSV, "w", newline='') as gen_file:
+                writing = csv.writer(gen_file, delimiter=',')
+                for hour in range_hours:
+                    data = [hour, current_day - 1 if hour > current_hour else current_day,
+                            current_month, 0, 0, 0]
                     writing.writerow(data)
-                else:
-                    data = [hour, current_day, current_month, 0, 0, 0]
-                    writing.writerow(data)
 
-        plt.title('Result of identification (per hour)')
-        plt.ylabel('Count of identificated')
-        plt.xlabel('Hour')
-        plt.xticks(np.arange(len(range_hours)), range_hours)
-        ax = plt.gca()
-        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-        ax.grid(axis='y')
-        plt.savefig(config.stats.FILE_RESULT_PLOT)
-        plt.clf()
-        self.read_plot()
+            self._create_blank_plot()
+            self._update_plot()
+            self.show_info("Statistics cleared")
 
-    def popup_photo(self):
-        if (os.path.exists(config.stats.FILE_RESULT_PLOT)):
-            try:
-                popup_window = PlotPopup(self.ids.plot.source)
-                popup_window.open()
-                pass
-            except BaseException:
-                pass
+        except Exception as e:
+            logger.exception("Error clearing stats")
 
-    def update_right_plot(self, source):
-        self.ids.plot.source = str(source)
-        self.ids.plot.reload()
+    def _update_plot(self) -> None:
+        """Update plot display."""
+        try:
+            plot_path = self.read_plot()
+            if self.ids.plot:
+                self.ids.plot.source = str(plot_path)
+                self.ids.plot.reload()
+        except Exception as e:
+            logger.exception("Error updating plot")
 
-    def its_ok(self):
-        self.disable_button(button=self.ids.its_ok_btn)
-        self.disable_button(button=self.ids.its_nok_btn)
+    # ============================================================
+    # Person Identification
+    # ============================================================
 
-        current_hour = int(getTime("hour"))
-        current_day = int(getTime("day"))
-        current_month = int(getTime("month"))
-        data = [current_hour, current_day, current_month, 0, 1, 0]
+    def switch_on_person(self, name: str) -> None:
+        try:
+            if self.camera_service.is_running():
+                self.presenter.stop_camera()
 
-        with open(config.stats.FILE_STATS_CSV, "a", newline='') as gen_file:
-            writing = csv.writer(gen_file, delimiter=',')
-            writing.writerow(data)
-        self.read_plot()
+            self.presenter.show_person_info(name)
 
-    def its_nok(self):
-        self.disable_button(button=self.ids.its_ok_btn)
-        self.disable_button(button=self.ids.its_nok_btn)
+        except Exception as e:
+            logger.exception(f"Error switching person {name}")
 
-        current_hour = int(getTime("hour"))
-        current_day = int(getTime("day"))
-        current_month = int(getTime("month"))
+    # ============================================================
+    # Result Recording
+    # ============================================================
 
-        data = [current_hour, current_day, current_month, 0, 0, 1]
+    def its_ok(self) -> None:
+        """Record correct identification."""
+        try:
+            self._disable_button(self.ids.its_ok_btn)
+            self._disable_button(self.ids.its_nok_btn)
 
-        with open(config.stats.FILE_STATS_CSV, "a", newline='') as gen_file:
-            writing = csv.writer(gen_file, delimiter=',')
-            writing.writerow(data)
-        self.read_plot()
+            hour = TimeUtils.get_hour()
+            day = TimeUtils.get_day()
+            month = TimeUtils.get_month()
+            data = [hour, day, month, 0, 1, 0]
 
-    def its_add_one(self):
-        current_hour = int(getTime("hour"))
-        current_day = int(getTime("day"))
-        current_month = int(getTime("month"))
+            with open(config.stats.FILE_STATS_CSV, "a", newline='') as gen_file:
+                writing = csv.writer(gen_file, delimiter=',')
+                writing.writerow(data)
 
-        data = [current_hour, current_day, current_month, 1, 0, 0]
+            self._update_plot()
 
-        with open(config.stats.FILE_STATS_CSV, "a", newline='') as gen_file:
-            writing = csv.writer(gen_file, delimiter=',')
-            writing.writerow(data)
-        self.read_plot()
+        except Exception as e:
+            logger.exception("Error recording OK result")
+
+    def its_nok(self) -> None:
+        """Record incorrect identification."""
+        try:
+            self._disable_button(self.ids.its_ok_btn)
+            self._disable_button(self.ids.its_nok_btn)
+
+            hour = TimeUtils.get_hour()
+            day = TimeUtils.get_day()
+            month = TimeUtils.get_month()
+            data = [hour, day, month, 0, 0, 1]
+
+            with open(config.stats.FILE_STATS_CSV, "a", newline='') as gen_file:
+                writing = csv.writer(gen_file, delimiter=',')
+                writing.writerow(data)
+
+            self._update_plot()
+
+        except Exception as e:
+            logger.exception("Error recording NOK result")
+
+    def its_add_one(self) -> None:
+        """Record identification attempt."""
+        try:
+            hour = TimeUtils.get_hour()
+            day = TimeUtils.get_day()
+            month = TimeUtils.get_month()
+            data = [hour, day, month, 1, 0, 0]
+
+            with open(config.stats.FILE_STATS_CSV, "a", newline='') as gen_file:
+                writing = csv.writer(gen_file, delimiter=',')
+                writing.writerow(data)
+
+            self._update_plot()
+
+        except Exception as e:
+            logger.exception("Error recording attempt")
+
+    # ============================================================
+    # UI Helpers
+    # ============================================================
+    @mainthread
+    def _disable_button(self, button) -> None:
+        """Disable button.
+
+        Args:
+            button: Button widget
+        """
+        try:
+            button.disabled = True
+            button.opacity = 0.5
+        except Exception as e:
+            logger.exception("Error disabling button")
+
+    def _enable_button(self, button, name: str = '') -> None:
+        """Enable button.
+
+        Args:
+            button: Button widget
+            name: Optional text for button
+        """
+        try:
+            if button == self.ids.identification_btn:
+                button.text = name
+                self._enable_button(self.ids.its_ok_btn)
+                self._enable_button(self.ids.its_nok_btn)
+                self.its_add_one()
+
+            button.disabled = False
+            button.opacity = 1.0
+        except Exception as e:
+            logger.exception("Error enabling button")
+
+    def disable_button(self, button) -> bool:
+        """Check if button should be disabled.
+
+        Args:
+            button: Button widget
+
+        Returns:
+            True if should be disabled
+        """
+        return button.disabled
+
+    def enable_button(self, button) -> bool:
+        """Check if button should be enabled.
+
+        Args:
+            button: Button widget
+
+        Returns:
+            True if should be enabled
+        """
+        return not button.disabled
+
+    def popup_photo(self) -> None:
+        """Show photo in popup."""
+        try:
+            if config.stats.FILE_RESULT_PLOT.exists():
+                from src.ui.popups.plot import PlotPopup
+                popup = PlotPopup(str(config.stats.FILE_RESULT_PLOT))
+                popup.open()
+        except Exception as e:
+            logger.exception("Error showing popup")
+
+    # ============================================================
+    # Cleanup
+    # ============================================================
+
+    def on_leave(self) -> None:
+        """Called when screen is left."""
+        try:
+            self.presenter.stop()
+            logger.info("FaceScanner screen left")
+        except Exception as e:
+            logger.exception("Error on screen leave")

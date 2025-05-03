@@ -96,7 +96,7 @@
                         color: header_text_color
                     Spinner:
                         id:model_name
-                        text:root.model_name
+                        text:str(root.selected_model)
                         text_size : self.width, None
                         size_hint_y: 1.6
                         size_hint_x: 0.7
@@ -105,7 +105,7 @@
                         font_name: font_light
                         background_normal:'assets/images/light_grey.jpg'
                         background_down: 'assets/images/pressed.jpg'
-                        values: root.get_values_model()
+                        values: root.presenter.get_available_models()
                         on_text: root.on_spinner_model_select(model_name.text)
                         option_cls: Factory.get("MySpinnerOption")
 
@@ -119,7 +119,7 @@
                         color: header_text_color
                     Label:
                         id: number_people_model_text
-                        text: "None" #device part number
+                        text: str(len(root.selected_model.train_dataset_Y)) if root.selected_model else "0"
                         halign:"left"
                         text_size: self.size
                         font_name: font_light
@@ -134,7 +134,7 @@
                         color: header_text_color
                     Label:
                         id: number_people_database_text
-                        text: root.set_text_number_in_base()
+                        text: str(len(root.person_service.registry.items))
                         halign:"left"
                         text_size: self.size
                         font_name: font_light
