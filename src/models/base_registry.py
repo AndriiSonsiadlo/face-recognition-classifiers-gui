@@ -60,6 +60,9 @@ class BaseRegistry(ABC, Generic[T]):
                 return item
         return None
 
+    def get_count(self) -> int:
+        return len(self.items)
+
     def get_all(self):
         return self.items.copy()
 

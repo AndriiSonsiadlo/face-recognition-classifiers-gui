@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -19,6 +20,15 @@ class PersonRegistry(BaseRegistry):
         if success:
             item.photos_path.mkdir(exist_ok=True)
         return success
+
+    def update(self, name, new_name, **kwargs) -> None:
+        kwargs['name'] = new_name
+        super().update(name, **kwargs)
+        if name != new_name:
+            os.rename(
+                config.paths.PERSON_DATA_DIR / name,
+                config.paths.PERSON_DATA_DIR / new_name
+            )
 
 
 if __name__ == '__main__':

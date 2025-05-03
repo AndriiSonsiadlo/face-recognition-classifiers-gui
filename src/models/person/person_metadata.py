@@ -5,7 +5,7 @@ from typing import List
 from pydantic import BaseModel, NonNegativeInt
 
 from core import config, AppLogger
-from src.core.enums import Gender
+from core.enums import Gender
 
 logger = AppLogger().get_logger(__name__)
 
@@ -66,12 +66,13 @@ class ImageValidator:
     """Validates image files."""
 
     @staticmethod
-    def validate_image(file_path: Path) -> bool:
+    def validate_image(file_path) -> bool:
+        file_path = Path(file_path)
         try:
             if not file_path.exists() or not file_path.is_file():
                 return False
 
-            if file_path.suffix.lower() not in config.person.ALLOWED_EXTENSIONS:
+            if file_path.suffix.lower().lstrip('.') not in config.person.ALLOWED_EXTENSIONS:
                 return False
 
             file_size_mb = file_path.stat().st_size / (1024 * 1024)
