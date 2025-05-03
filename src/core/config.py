@@ -89,8 +89,6 @@ class MainConfig(BaseModel):
     stats: StatisticsConfig = StatisticsConfig()
     images: ImageAssetConfig = ImageAssetConfig()
 
-    CAMERA_PORTS: List[str] = ["Port 0", "Port 1", "Port 2", "Port 3", "Port 4"]
-
     @validator("paths", pre=False, always=True)
     def create_directories(cls, v: PathConfig, values):
         """
