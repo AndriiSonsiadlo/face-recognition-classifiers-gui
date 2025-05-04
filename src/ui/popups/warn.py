@@ -4,9 +4,9 @@ from kivy.uix.popup import Popup
 
 
 class WarnPopup(Popup):
-    def __init__(self, text: str, **kwargs):
+    def __init__(self, title: str, **kwargs):
         super().__init__(**kwargs)
-        self.title = text
+        self.title = title
 
     def ok_pressed(self):
         self.dismiss()
