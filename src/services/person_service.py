@@ -1,6 +1,7 @@
+import shutil
+from pathlib import Path
 from typing import List, Optional
 
-from core import Gender
 from core.logger import AppLogger
 from models.person.person_metadata import PersonMetadata, ImageValidator
 from models.person.person_registry import PersonRegistry
@@ -20,27 +21,25 @@ class PersonService:
         self.registry = registry or PersonRegistry()
 
     def create_person(
-            self, name: str, age: int, photo_paths: List[str], **params
+            self, person: PersonMetadata, photo_paths: List[str], **params
     ) -> Optional[PersonMetadata]:
         try:
-            photo_paths = ImageValidator.validate_images(photo_paths)
+            photo_paths: List[Path] = ImageValidator.validate_images(photo_paths)
             if not photo_paths:
-                logger.warning(f"No valid photos for person {name}")
+                logger.warning(f"No valid photos for person {person.name}")
 
-            person = PersonMetadata(
-                name=name,
-                age=age,
-                **params
-            )
             if self.registry.add(person):
-                logger.info(f"Created person: {name}")
+                logger.info(f"Created person: {person.name}")
+                for i, photo_path in enumerate(photo_paths, start=1):
+                    photo_path = Path(photo_path)
+                    shutil.copy(photo_path, person.photos_path / f"{i}{photo_path.suffix}")
                 return person
             else:
                 return None
 
         except Exception as e:
-            logger.exception(f"Error creating person {name}: {e}")
-            return None
+            logger.exception(f"Error creating person {person.name}: {e}")
+            raise
 
     def get_person(self, name: str) -> Optional[PersonMetadata]:
         return self.registry.get(name)
@@ -62,18 +61,19 @@ class PersonService:
             self,
             name: str,
             new_name: Optional[str] = None,
+            photos: Optional[List[Path]] = None,
             **kwargs
     ) -> Optional[PersonMetadata]:
         try:
-            self.registry.update(name, **kwargs)
-            if new_name and new_name != name:
-                if self.registry.rena(new_name):
-                    logger.warning(f"Person '{new_name}' already exists")
-                    return None
-                person.name = new_name
+            self.registry.update(name, new_name, **kwargs)
+
+            person = self.registry.get(new_name)
+            if photos is not None:
+                pass
+
 
         except Exception as e:
-            logger.exception(f"Error updating person {old_name}: {e}")
+            logger.exception(f"Error updating person {name}: {e}")
             return None
 
     def delete_person(self, name: str) -> bool:

@@ -1,6 +1,7 @@
 import queue
 import threading
 import time
+from functools import lru_cache
 from typing import Optional, Tuple
 
 import cv2
@@ -116,59 +117,15 @@ class CameraService:
     def is_running(self) -> bool:
         return self._running.is_set()
 
-# ----------------------------
-# file: view_webcamera.py
-# ----------------------------
-
-# # ----------------------------
-# # file: main_integration.py
-# # ----------------------------
-# """
-# Example integration showing how to wire up the MVP components with dependency injection.
-#
-# This is an integration scaffold — adapt it to your actual Kivy App structure.
-# """
-# from pathlib import Path
-#
-# from presenter import WebCameraPresenter
-# from utils.logger import AppLogger
-#
-# logger = AppLogger().get_logger(__name__)
-#
-#
-# def build_webcamera_component(parent_widget, model_algorithm: str = None, model_path: str = None, port: int = 0, fps: int = 30):
-#     """Create and wire view + presenter + service. Return the view instance to embed in your Kivy layout."""
-#
-#     # 1) Camera service (DI)
-#     camera_service = CameraService(port=port, fps=fps)
-#
-#     # 2) Model config
-#     model_config = ModelConfig(algorithm=model_algorithm, path_file_model=model_path)
-#
-#     # 3) View (Kivy widget)
-#     view = WebCameraView()
-#     parent_widget.add_widget(view)
-#
-#     # 4) Presenter (injects service & model)
-#     presenter = WebCameraPresenter(view=view, camera_service=camera_service, model_config=model_config)
-#     view.presenter = presenter
-#
-#     return view, presenter
-
-
-# Example usage in your Kivy app:
-# view, presenter = build_webcamera_component(main_screen, model_algorithm=config.model.ALGORITHM_KNN, model_path='/path/to/model')
-# Bind your start/stop buttons to view.on_start_button_pressed / view.on_stop_button_pressed
-
-
-# ----------------------------
-# Notes
-# ----------------------------
-# - Each file section above should be saved as its own module for clarity.
-# - The CameraService runs an independent thread that continually reads from the cv2.VideoCapture
-#   and places frames into a sized queue. The Presenter polls that queue on the Kivy mainloop
-#   and delegates ML predictions and view updates.
-# - Errors are logged, and the view gets notified about fatal failures via show_error.
-# - You can extend AlgorithmWrapper to support more ML loaders or lazy-loading behavior.
-# - This structure enables unit-testing of Presenter and CameraService independently.
-# - Make sure 'core.config' and the ML algorithm classes remain compatible with the new wrappers.
+    @lru_cache(maxsize=None)
+    def get_all_cameras(self, max_tests=10):
+        available = []
+        for index in range(max_tests):
+            cap = cv2.VideoCapture(index)
+            if cap is None or not cap.isOpened():
+                continue
+            ret, _ = cap.read()
+            if ret:
+                available.append(index)
+            cap.release()
+        return available
