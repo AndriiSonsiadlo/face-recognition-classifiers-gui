@@ -32,7 +32,7 @@
                 background_normal:''
                 background_down: 'assets/images/pressed.jpg'
                 on_release:
-                    if (root.manager.current == "edit_person"): root.manager.current = "wanted"
+                    if (root.manager.current == "edit_person"): root.manager.current = "persons"
                     elif root.manager.current == "learning_edit": root.manager.current ="learning"
                     elif root.manager.current == "learning_create": root.manager.current ="learning"
                     else: root.manager.current = root.manager.stack.previous_screen()
@@ -109,17 +109,17 @@
             #Wanted Person button
             CustButton:
                 id: wanted_button
-                text:"Wanted"
+                text:"Persons"
                 size_hint_x: 0.85
-                color: (0,0,0,1) if root.manager.current=="wanted" else normal_text_color
-                font_name: font_regular if root.manager.current=="wanted" else font_light
+                color: (0,0,0,1) if root.manager.current=="persons" else normal_text_color
+                font_name: font_regular if root.manager.current=="persons" else font_light
                 on_release:
                     root.manager.transition.direction = "left" if root.manager.current == "facescanner" or root.manager.current == "learning" or root.manager.current == "learning_create" or root.manager.current == "learning_edit" else "right"
-                    root.manager.current = "wanted"
+                    root.manager.current = "persons"
                     root.manager.stack.add_screen(root.manager.current)
 
                 Label:
-                    opacity:1 if root.manager.current=="wanted" else 0
+                    opacity:1 if root.manager.current=="persons" else 0
                     canvas:
                         Color:
                             rgba: header_text_color
@@ -218,10 +218,10 @@
 
         #screen classes:
         FaceScanner:
-        WantedPerson:
-        EditPerson:
         LearningMode:
         LearningEdit:
         LearningCreate:
+        PersonsScreen:
         AddPerson:
+        EditPerson:
 
