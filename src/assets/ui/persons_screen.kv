@@ -2,31 +2,16 @@
 
 
 <SelectableLabel>:
-    # Draw a background to indicate selection
     canvas.before:
         Color:
             rgb: (228/255,228/255,228/255) if self.selected else (240/255,240/255,240/255)
         Rectangle:
             pos: self.pos
             size: self.size
-
-#    canvas:
-#        Color:
-#            rgb: (250/255,250/255,228/255)
-#        Line:
-#            width: 0.8
-#            points: (self.x+20, 0, self.width-20, 1)
-
     color: (0, 0, 0, 1) if self.selected else (0, 0, 0, 1)
 
-
-
-
-
-
-#Wanted layout
-<WantedPerson>:
-    name: "wanted"
+<PersonsScreen>:
+    name: "persons"
     on_pre_enter:
         root.refresh()
 
@@ -50,7 +35,7 @@
                 size_hint_x: None
                 width:25
             Label:
-                text: "Wanted Person"
+                text: "Persons"
                 font_name: font_regular
                 font_size: '18sp'
                 color: header_text_color
@@ -98,11 +83,10 @@
                             halign:'left'
                             text_size: self.size
                             on_text:
-                                if self.text: root.search_person(self.text)
-                                else: root.clear_search()
+                                if self.text: root.presenter.search_person(self.text)
+                                else: root.presenter.search_person(self.text)
 
-
-                        RecycleView:
+                        PersonRecycleView:
                             id: rv
                             viewclass: 'SelectableLabel'
                             SelectableRecycleBoxLayout:

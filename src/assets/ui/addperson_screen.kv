@@ -1,17 +1,3 @@
-#Copyright (C) 2021 Andrii Sonsiadlo
-
-<PopupBox>:
-    pop_up_text: _pop_up_text
-    size_hint: .5, .5
-    auto_dismiss: True
-    title: 'Status'
-
-    BoxLayout:
-        orientation: "vertical"
-        Label:
-            id: _pop_up_text
-            text: ''
-
 <AddPerson>:
     name:"add_person"
 
@@ -38,7 +24,7 @@
                 size_hint_x: None
                 width:50
             Label:
-                text: "Add Wanted Person"
+                text: "Add Person"
                 font_name: font_regular
                 font_size: '18sp'
                 color: header_text_color
@@ -102,9 +88,6 @@
                                     halign:'left'
                                     color: normal_text_color
                                     font_name: font_light
-
-
-
 
                             BoxLayout:
                                 orientation:'horizontal'
@@ -263,7 +246,7 @@
                                 height:70
                                 pos_hint: {'top': 1}
                                 on_release:
-                                    root.delete_photo()
+                                    root.form_presenter.delete_photo()
                                 Label:
                                     id:delete_photo_btn_text
                                     center_y: self.parent.center_y+15
@@ -292,7 +275,7 @@
                                 height:70
                                 pos_hint: {'top': 1}
                                 on_release:
-                                    root.load_photos()
+                                    root.form_presenter.load_photos()
                                 Label:
                                     id:import_photos_btn_text
                                     center_y: self.parent.center_y+15
@@ -326,7 +309,6 @@
                         BoxLayout:
                             orientation: 'horizontal'
 
-
                             RoundButton:
                                 id:clear_btn
                                 size_hint_y:None
@@ -334,7 +316,7 @@
                                 height:70
                                 pos_hint: {'top': 1}
                                 on_release:
-                                    root.clear_inputs()
+                                    root.form_presenter.clear_inputs()
                                 Label:
                                     id:cancel_person_btn_text
                                     center_y: self.parent.center_y+15
@@ -365,7 +347,7 @@
                                 height:70
                                 pos_hint: {'top': 1}
                                 on_release:
-                                    root.add_person()
+                                    root.presenter.add_person()
                                 Label:
                                     id:add_person_btn_text
                                     center_y: self.parent.center_y+15
@@ -416,7 +398,7 @@
                         allow_stretch: True
                         #size_hint_y:None
                         keep_ratio:True
-                        on_press: root.popup_photo()
+                        on_press: root.popup_photo(self.source)
                         #height:50
                     Label:
                         id:preview_photo_name
@@ -448,7 +430,7 @@
                             height:30
                             pos_hint: {'top': 1}
                             on_release:
-                                root.previous_photo()
+                                root.form_presenter.previous_photo()
                         Label:
                             size_hint_x:None
                             width:10
@@ -460,7 +442,7 @@
                             height:30
                             pos_hint: {'top': 1}
                             on_release:
-                                root.next_photo()
+                                root.form_presenter.next_photo()
                         Label:
 
                     BoxLayout: #next/previous photo button box
@@ -478,7 +460,7 @@
                             height:30
                             pos_hint: {'top': 1}
                             on_release:
-                                root.cropping()
+                                root.form_presenter.crop_photo()
                         Label:
                             size_hint_x:None
                             width:10
@@ -490,7 +472,7 @@
                             height:30
                             pos_hint: {'top': 1}
                             on_release:
-                                root.face_detection()
+                                root.form_presenter.face_detection()
                         Label:
                     Label:
                         id:count_face_text
@@ -506,7 +488,3 @@
                         center_y: preview_photo.center_y-preview_photo.height/2 + 35
                         center_x: preview_photo.center_x
                         font_size: '13sp'
-
-
-
-

@@ -38,7 +38,7 @@
                 size_hint_x: None
                 width:50
             Label:
-                text: "Edit Wanted Person"
+                text: "Edit Person Info"
                 font_name: font_regular
                 font_size: '18sp'
                 color: header_text_color
@@ -261,7 +261,7 @@
                                 height:70
                                 pos_hint: {'top': 1}
                                 on_release:
-                                    root.delete_photo()
+                                    root.form_presenter.delete_photo()
                                 Label:
                                     id:delete_photo_btn_text
                                     center_y: self.parent.center_y+15
@@ -290,7 +290,7 @@
                                 height:70
                                 pos_hint: {'top': 1}
                                 on_release:
-                                    root.load_photos()
+                                    root.form_presenter.load_photos()
                                 Label:
                                     id:import_photos_btn_text
                                     center_y: self.parent.center_y+15
@@ -333,7 +333,7 @@
                                 pos_hint: {'top': 1}
                                 on_release:
                                     root.manager.transition.direction = "right"
-                                    root.manager.current = "wanted"
+                                    root.manager.current = "persons"
                                 Label:
                                     id:cancel_person_btn_text
                                     center_y: self.parent.center_y+15
@@ -364,7 +364,7 @@
                                 height:70
                                 pos_hint: {'top': 1}
                                 on_release:
-                                    root.accept()
+                                    root.presenter.update_person()
                                 Label:
                                     id:add_person_btn_text
                                     center_y: self.parent.center_y+15
@@ -417,7 +417,7 @@
                         allow_stretch: True
                         #size_hint_y:None
                         keep_ratio:True
-                        on_press: root.popup_photo()
+                        on_press: root.popup_photo(self.source)
                         #height:50
                     Label:
                         id:preview_photo_name
@@ -449,7 +449,7 @@
                             height:30
                             pos_hint: {'top': 1}
                             on_release:
-                                root.previous_photo()
+                                root.form_presenter.previous_photo()
                         Label:
                             size_hint_x:None
                             width:10
@@ -461,7 +461,7 @@
                             height:30
                             pos_hint: {'top': 1}
                             on_release:
-                                root.next_photo()
+                                root.form_presenter.next_photo()
                         Label:
 
                     BoxLayout: #next/previous photo button box
@@ -479,7 +479,7 @@
                             height:30
                             pos_hint: {'top': 1}
                             on_release:
-                                root.cropping()
+                                root.form_presenter.crop_photo()
                         Label:
                             size_hint_x:None
                             width:10
@@ -491,7 +491,7 @@
                             height:30
                             pos_hint: {'top': 1}
                             on_release:
-                                root.face_detection()
+                                root.form_presenter.face_detection()
                         Label:
                     Label:
                         id:count_face_text

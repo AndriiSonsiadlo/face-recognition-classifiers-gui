@@ -1,18 +1,19 @@
 #Copyright (C) 2021 Andrii Sonsiadlo
 
-#: import ew kivy.uix.effectwidget
+#:import ew kivy.uix.effectwidget
 #:import Factory kivy.factory.Factory
 
-#FaceScanner mode layout
+# FaceScanner mode layout
 <FaceScanner>:
     name: "facescanner"
     on_pre_enter:
         root.refresh()
 
-    #frame surrounding the workspace
+    # frame surrounding the workspace
     BoxLayout:
         orientation: 'vertical'
-        padding:30,0,30,30
+        padding: 30, 0, 30, 30
+
         canvas.before:
             Color:
                 rgb: bck_color
@@ -20,11 +21,11 @@
                 pos: self.pos
                 size: self.size
 
-        #mode title
+        # mode title
         BoxLayout:
-            orientation:'horizontal'
-            size_hint_y:None
-            height:40
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: 40
             Label:
                 size_hint_x: None
                 width:25
@@ -35,14 +36,14 @@
                 color: header_text_color
                 size_hint_y: None
                 size_hint_x: None
-                height:40
-                halign:"left"
-                valign:"center"
+                height: 40
+                halign: "left"
+                valign: "center"
 
         GridLayout:
             size:self.parent.size
-            padding:20
-            cols:2
+            padding: 20
+            cols: 2
 
             #workspace background
             canvas.before:
@@ -52,15 +53,16 @@
                     pos: self.pos
                     size: self.size
 
+            # LEFT PANEL: Controls and Statistics
             BoxLayout:
-                spacing:10
-                orientation:'vertical'
-                padding:0,0,20,0
+                orientation: 'vertical'
+                spacing: 10
+                padding: 0, 0, 20, 0
 
                 BoxLayout:
-                    orientation:'vertical'
-                    size_hint_y:None
-                    height:190
+                    orientation: 'vertical'
+                    size_hint_y: None
+                    height: 190
                     BoxLayout:
                         orientation:'horizontal'
 
@@ -74,7 +76,7 @@
                             color: header_text_color
                     Spinner:
                         id:camera_port
-                        text:root.set_text_camera_spinner()
+                        text:root.presenter.get_selected_camera_port()
                         text_size : self.width, None
                         size_hint_y: 1.6
                         size_hint_x: 0.7
@@ -83,7 +85,7 @@
                         font_name: font_light
                         background_normal:'assets/images/light_grey.jpg'
                         background_down: 'assets/images/pressed.jpg'
-                        values: root.get_values_camera()
+                        values: root.presenter.get_available_cameras()
                         on_text: root.on_spinner_camera_select(camera_port.text)
                         option_cls: Factory.get("MySpinnerOption")
                     Label:
@@ -94,9 +96,11 @@
                         text_size: self.size
                         font_name: font_light
                         color: header_text_color
+
+                    # Model spinner
                     Spinner:
-                        id:model_name
-                        text:str(root.selected_model)
+                        id: model_spinner
+                        text: root.presenter.get_selected_model_name()
                         text_size : self.width, None
                         size_hint_y: 1.6
                         size_hint_x: 0.7
@@ -106,7 +110,7 @@
                         background_normal:'assets/images/light_grey.jpg'
                         background_down: 'assets/images/pressed.jpg'
                         values: root.presenter.get_available_models()
-                        on_text: root.on_spinner_model_select(model_name.text)
+                        on_text: root.on_spinner_model_select(model_spinner.text)
                         option_cls: Factory.get("MySpinnerOption")
 
                     Label:
@@ -119,7 +123,7 @@
                         color: header_text_color
                     Label:
                         id: number_people_model_text
-                        text: str(len(root.selected_model.train_dataset_Y)) if root.selected_model else "0"
+                        text: "None" #device part number
                         halign:"left"
                         text_size: self.size
                         font_name: font_light
@@ -134,7 +138,7 @@
                         color: header_text_color
                     Label:
                         id: number_people_database_text
-                        text: str(len(root.person_service.registry.items))
+                        text: str(app.person_service.registry.get_count())
                         halign:"left"
                         text_size: self.size
                         font_name: font_light
@@ -159,7 +163,7 @@
                     size_hint_x:None
                     on_press: root.popup_photo()
 
-                RoundButton: #clear statistics button
+                RoundButton:
                     text: "Clear"
                     size_hint:None,None
                     on_press: root.clear_stats()
