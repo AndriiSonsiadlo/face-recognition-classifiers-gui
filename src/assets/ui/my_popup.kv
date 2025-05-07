@@ -1,11 +1,8 @@
-#Copyright (C) 2021 Andrii Sonsiadlo
-
-
-<MyPopupInfo>:
+<InfoPopup>:
     title_font: font_regular
     title_color: normal_text_color
     size_hint: None, None
-    size: 200, 120
+    size: 400, 180
     background: 'assets/images/pressed.jpg'
     separator_color: header_text_color
     BoxLayout:
@@ -29,8 +26,48 @@
         Label:
             size_hint_y:.2
 
+<WarnPopup>:
+    title_font: font_regular
+    title_color: normal_text_color
+    size_hint: None, None
+    size: 400, 180
+    background: 'assets/images/pressed.jpg'
+    separator_color: header_text_color
+    BoxLayout:
+        orientation: 'vertical'
+        Label:
+            size_hint_y:.2
+        BoxLayout:
+            orientation: 'horizontal'
+            Label:
+                size_hint_x:.4
+            OkButtonRed:
+                id: ok_button
+                text:"OK"
+                size_hint:None,None
+                font_size: '14dp'
+                height:30
+                width:60
+                background_normal: 'assets/images/yellow.jpg'
+                on_release: root.ok_pressed()
+            Label:
+                size_hint_x:.4
+        Label:
+            size_hint_y:.2
 
-<MyPopupPersonInfo>:
+<PopupBox>:
+    pop_up_text: _pop_up_text
+    size_hint: .5, .5
+    auto_dismiss: True
+    title: 'Status'
+
+    BoxLayout:
+        orientation: "vertical"
+        Label:
+            id: _pop_up_text
+            text: ''
+
+<PersonInfoPopup>:
     title_font: font_regular
     title_color: normal_text_color
     size_hint: None, None
@@ -288,7 +325,7 @@
             height: 20
 
 
-<MyPopupAskPerson>:
+<DeletePersonPopup>:
     title_font: font_regular
     title_color: normal_text_color
     size_hint: None, None
@@ -328,7 +365,7 @@
         Label:
             size_hint_y:.2
 
-<MyPopupAskModel>:
+<DeleteModelPopup>:
     title_font: font_regular
     title_color: normal_text_color
     size_hint: None, None
@@ -363,35 +400,6 @@
                 height:30
                 width:80
                 on_release: root.no_pressed()
-            Label:
-                size_hint_x:.4
-        Label:
-            size_hint_y:.2
-
-<MyPopupWarn>:
-    title_font: font_regular
-    title_color: normal_text_color
-    size_hint: None, None
-    size: 300, 120
-    background: 'assets/images/pressed.jpg'
-    separator_color: header_text_color
-    BoxLayout:
-        orientation: 'vertical'
-        Label:
-            size_hint_y:.2
-        BoxLayout:
-            orientation: 'horizontal'
-            Label:
-                size_hint_x:.4
-            OkButtonRed:
-                id: ok_button
-                text:"OK"
-                size_hint:None,None
-                font_size: '14dp'
-                height:30
-                width:60
-                background_normal: 'assets/images/yellow.jpg'
-                on_release: root.ok_pressed()
             Label:
                 size_hint_x:.4
         Label:
