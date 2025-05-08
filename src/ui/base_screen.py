@@ -6,22 +6,37 @@ from core.logger import AppLogger
 class BaseScreen(Screen):
     """Base class for all screens"""
 
-    def __init__(self, **kwargs):
+    def __init__(self, logger_name=None, **kwargs):
         super().__init__(**kwargs)
-        self.logger = AppLogger().get_logger()
+        self.logger = AppLogger().get_logger(logger_name or "BaseScreen")
 
-    def refresh(self):
-        """Called when screen is entered"""
-        pass
+    def refresh(self) -> None:
+        """Called when screen is entered - update UI."""
+        try:
+            if self.presenter:
+                self.presenter.refresh()
+            self.logger.info("Screen refreshed")
+        except Exception as e:
+            self.logger.exception("Error refreshing screen")
+            self.show_error("Refresh Error", str(e))
 
     def show_error(self, title: str, message: str = "") -> None:
         """Show error popup"""
-        from classes.Popup.my_popup_warn import MyPopupWarn
-        popup = MyPopupWarn(text=f"{title}\n{message}")
+        from ui.popups.warn import WarnPopup
+        popup = WarnPopup(title=f"{title}\n\n{message}")
         popup.open()
 
-    def show_info(self, title: str) -> None:
+    def show_info(self, title: str, message: str = "") -> None:
         """Show info popup"""
-        from classes.Popup.my_popup_info import MyPopupInfo
-        popup = MyPopupInfo(text=title)
+        from ui.popups.info import InfoPopup
+        popup = InfoPopup(title=f"{title}\n\n{message}")
         popup.open()
+
+    def popup_photo(self, path: str) -> None:
+        """Show photo in popup"""
+        try:
+            from ui.popups.plot import PlotPopup
+            popup = PlotPopup(path)
+            popup.open()
+        except Exception:
+            pass
