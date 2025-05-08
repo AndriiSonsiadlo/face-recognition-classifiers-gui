@@ -1,5 +1,3 @@
-# Copyright (C) 2021 Andrii Sonsiadlo
-
 import threading
 
 from kivy.app import App
@@ -17,7 +15,7 @@ from ui.screens.model.create_screen import LearningCreate
 from ui.screens.model.recycleview_create import *
 from ui.screens.person.add_screen import AddPerson
 from ui.screens.person.edit_screen import EditPerson
-from ui.screens.person.wanted_screen import *
+from ui.screens.person.screen import *
 from ui.screens.person.recycleview import *
 from ui.screen_stack import ScreenStack
 from ui.drop_button import DropButton
@@ -32,7 +30,7 @@ Builder.load_file("assets/ui/widget_styles.kv")
 Builder.load_file("assets/ui/facescanner_screen.kv")
 Builder.load_file("assets/ui/addperson_screen.kv")
 Builder.load_file("assets/ui/editperson_screen.kv")
-Builder.load_file("assets/ui/wantedperson_screen.kv")
+Builder.load_file("assets/ui/persons_screen.kv")
 Builder.load_file("assets/ui/learningmode_screen.kv")
 Builder.load_file("assets/ui/createmodel_screen.kv")
 Builder.load_file("assets/ui/editmodel_screen.kv")
@@ -47,7 +45,7 @@ class Main(GridLayout, threading.Thread):
 	manager = ObjectProperty(None)
 
 
-# manager for changing screens
+# Manager for changing screens
 class WindowManager(ScreenManager):
 	def __init__(self, **kwargs):
 		super().__init__(**kwargs)
@@ -55,14 +53,38 @@ class WindowManager(ScreenManager):
 		self.stack.add_screen("facescanner")
 
 
-# main app class
+# Main app class
 class Application(App):
 	icon = 'assets/images/icon_pwr.ico'
-	title = 'Automatic Identification'
+	title = 'Face Identification'
 
 	Window.size = (800, 600)
 	Window.minimum_width, Window.minimum_height = Window.size
 	Window.resizable = False
+
+	def __init__(self, *args, **kwargs):
+		super().__init__()
+		self.logger = AppLogger().get_logger(__name__)
+
+		from services import person_service, model_service
+		self.person_service = person_service
+		self.model_service = model_service
+
+	def _initialize(self) -> None:
+		"""Initialize screen resources."""
+		try:
+			# Create temp directory
+			if config.paths.TEMP_DIR.exists():
+				shutil.rmtree(config.paths.TEMP_DIR)
+			config.paths.TEMP_DIR.mkdir(parents=True, exist_ok=True)
+
+			# Create/initialize statistics file
+			config.stats.FILE_STATS_CSV.parent.mkdir(parents=True, exist_ok=True)
+			if not config.stats.FILE_STATS_CSV.exists():
+				config.stats.FILE_STATS_CSV.touch()
+		except Exception as e:
+			self.logger.exception(f"Error initializing main app: {e}")
+
 
 	def build(self):
 		return Main()
