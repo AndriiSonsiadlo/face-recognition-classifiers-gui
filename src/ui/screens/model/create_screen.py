@@ -92,7 +92,7 @@ class LearningCreate(Screen):
 		self.ids.learning_results.opacity = 0
 
 	def begin_learning(self):
-		if (self.isLearning == False):
+		if not self.isLearning:
 			self.isLearning = True
 			threading.Thread(target=self.begin_learning_release, daemon=True).start()
 
