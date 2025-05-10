@@ -2,13 +2,13 @@ from pathlib import Path
 
 import numpy as np
 
-from algorithms.classifier_base import ClassifierBase
+from algorithms.classifier_base import ClassifierInterface
 from core.logger import AppLogger
 
 logger = AppLogger().get_logger(__name__)
 
 
-class SVMClassifier(ClassifierBase):
+class SVMClassifier(ClassifierInterface):
     """Support Vector Machine classifier for face recognition."""
 
     def __init__(self, model_path: Path, gamma: str = "scale", verbose: bool = True):

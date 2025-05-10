@@ -4,13 +4,13 @@ from typing import Optional
 
 import numpy as np
 
-from algorithms.classifier_base import ClassifierBase
+from algorithms.classifier_base import ClassifierInterface
 from core.logger import AppLogger
 
 logger = AppLogger().get_logger(__name__)
 
 
-class KNNClassifier(ClassifierBase):
+class KNNClassifier(ClassifierInterface):
     """K-Nearest Neighbors classifier for face recognition."""
 
     def __init__(self, model_path: Path, n_neighbors: Optional[int] = None,

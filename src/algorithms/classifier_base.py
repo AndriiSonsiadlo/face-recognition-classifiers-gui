@@ -1,296 +1,410 @@
-import math
-import pickle
+"""
+Required Interface for Classifier Classes
+File: Reference for what KNNClassifier and SVMClassifier must implement
+"""
+
 from abc import ABC, abstractmethod
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import Tuple, List
 
-import cv2
-import face_recognition
 import numpy as np
-from PIL import ImageDraw, Image
-from face_recognition.face_recognition_cli import image_files_in_folder
-from sklearn import metrics
-
-from algorithms.face_encoding import FaceEncoding
-from core import config
-from core.logger import AppLogger
-
-logger = AppLogger().get_logger(__name__)
 
 
-class ClassifierBase(ABC):
-    """Abstract base class for face classifiers."""
+class ClassifierInterface(ABC):
+    """Abstract interface that all classifiers MUST implement.
 
-    MAX_WORKERS = 8
-    TRAIN_SPLIT_THRESHOLD = 5  # Images with index > 5 go to test set
-    UNKNOWN_LABEL = config.ui.TEXTS["unknown"]
+    Your KNNClassifier and SVMClassifier must have all these methods.
+    """
 
-    def __init__(self, model_name: str, model_path: Path, verbose: bool = True):
-        self.model_name = model_name
-        self.model_path = model_path
-        self.verbose = verbose
+    # ============================================================
+    # REQUIRED: Core Properties
+    # ============================================================
 
-        self.train_data: List[FaceEncoding] = []
-        self.test_data: List[FaceEncoding] = []
-        self.classifier = None
-        self.accuracy = 0.0
+    model_name: str
+    """Name of the model/algorithm (e.g., "KNN", "SVM")"""
 
-        self.identified_name = ""
-        self.counter_frame = 0
+    model_path: Path
+    """Path to save/load .clf file"""
+
+    classifier: object
+    """The underlying sklearn classifier instance"""
+
+    accuracy: float
+    """Accuracy score from test data"""
+
+    identified_name: str
+    """Last identified person name"""
+
+    counter_frame: int
+    """Number of consecutive frames with same prediction"""
+
+    train_data: List
+    """Training face encodings"""
+
+    test_data: List
+    """Test face encodings"""
+
+    # ============================================================
+    # REQUIRED: Model Lifecycle
+    # ============================================================
 
     @abstractmethod
-    def train(self) -> Tuple[bool, str]:
-        """Train the classifier. Must be implemented by subclasses."""
-        pass
+    def train(self) -> bool:
+        """Train the classifier on data.
 
-    @abstractmethod
-    def predict(self, encoding: np.ndarray) -> str:
-        """Predict label for a single face encoding."""
+        Must:
+        1. Load training data via _load_training_data()
+        2. Prepare features/labels via _prepare_training_data()
+        3. Create and fit sklearn classifier
+        4. Evaluate on test set via evaluate()
+        5. Save model via save_model()
+
+        Returns:
+            True if training successful
+
+        Example:
+            def train(self) -> bool:
+                if not self._load_training_data():
+                    return False
+                x_train, y_train = self._prepare_training_data()
+                self.classifier = KNeighborsClassifier(...)
+                self.classifier.fit(x_train, y_train)
+                self.evaluate()
+                return self.save_model()
+        """
         pass
 
     def load_model(self) -> bool:
-        """Load pre-trained model from disk."""
-        try:
-            with open(self.model_path, 'rb') as f:
-                self.classifier = pickle.load(f)
-            logger.info(f"Model loaded successfully from {self.model_path}")
-            return True
-        except Exception as e:
-            logger.error(f"Error loading model from {self.model_path}: {e}")
-            return False
+        """Load pre-trained model from disk.
+
+        Must:
+        1. Check if file exists
+        2. Unpickle the classifier
+        3. Assign to self.classifier
+
+        Returns:
+            True if successful
+
+        Implementation (you can copy this):
+            def load_model(self) -> bool:
+                try:
+                    with open(self.model_path, 'rb') as f:
+                        self.classifier = pickle.load(f)
+                    logger.info(f"Model loaded from {self.model_path}")
+                    return True
+                except Exception as e:
+                    logger.error(f"Error loading model: {e}")
+                    return False
+        """
+        pass
 
     def save_model(self) -> bool:
-        """Save trained model to disk."""
-        if self.classifier is None:
-            logger.error("No classifier to save")
-            return False
+        """Save trained model to disk as pickle.
 
-        try:
-            self.model_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(self.model_path, 'wb') as f:
-                pickle.dump(self.classifier, f)
-            logger.info(f"Model saved successfully to {self.model_path}")
-            return True
-        except Exception as e:
-            logger.error(f"Cannot save model: {e}")
-            return False
+        Must:
+        1. Check if classifier exists
+        2. Create directory if needed
+        3. Pickle classifier to .clf file
 
-    @staticmethod
-    def _partition_list(items: List, num_parts: int) -> List[List]:
-        """Partition a list into roughly equal parts."""
-        part_size = math.ceil(len(items) / num_parts)
-        return [items[part_size * i: part_size * (i + 1)] for i in range(num_parts)]
+        Returns:
+            True if successful
 
-    def _load_images_from_persons(self, person_names: List[str]) -> int:
-        """Load face encodings from person directories."""
-        for name in person_names:
-            person_photo_path = config.paths.get_dir_person_photo(name)
-            if not person_photo_path.is_dir():
-                continue
-
-            is_trained = False
-            is_tested = False
-
-            image_paths = image_files_in_folder(str(person_photo_path))
-            for index, img_path in enumerate(image_paths):
-                encoding = self._extract_face_encoding(img_path)
-
-                if encoding is None:
-                    continue
-
-                # Split into train/test based on index
-                if index > self.TRAIN_SPLIT_THRESHOLD or index == 1:
-                    self.test_data.append(FaceEncoding(encoding, name))
-                    is_tested = True
-                    logger.info(f"Added to test set: {name}")
-                else:
-                    self.train_data.append(FaceEncoding(encoding, name))
-                    is_trained = True
-
-            if not is_trained:
-                logger.warning(f"Person {name} has no training data")
-            if not is_tested:
-                logger.warning(f"Person {name} has no test data")
-
-        return len(self.train_data)
-
-    def _extract_face_encoding(self, image_path: str) -> Optional[np.ndarray]:
-        """Extract face encoding from image if exactly one face is found."""
-        try:
-            image = face_recognition.load_image_file(image_path)
-            face_locations = face_recognition.face_locations(image)
-
-            if len(face_locations) < 1:
-                logger.warning(f"Image {image_path} not suitable: 'Didn't find a face'")
-                return None
-            elif len(face_locations) > 1:
-                logger.warning(f"Image {image_path} not suitable: 'Found more than one face'")
-                return None
-
-            encoding = face_recognition.face_encodings(
-                image,
-                known_face_locations=face_locations
-            )[0]
-            return encoding
-        except Exception as e:
-            logger.error(f"Error processing {image_path}: {e}")
-            return None
-
-    def _prepare_training_data(self) -> Tuple[List, List]:
-        """Prepare training features and labels."""
-        X_train = [enc.encoding for enc in self.train_data]
-        y_train = [enc.name for enc in self.train_data]
-        return X_train, y_train
-
-    def _prepare_test_data(self) -> Tuple[List, List]:
-        """Prepare test features and labels."""
-        X_test = [enc.encoding for enc in self.test_data]
-        y_test = [enc.name for enc in self.test_data]
-        return X_test, y_test
-
-    def _load_training_data(self) -> bool:
-        """Load all training data using parallel processing."""
-        # Discover all person directories
-        train_dir = Path(folder_persons_data)
-        persons = [
-            p.name for p in train_dir.iterdir()
-            if p.is_dir() and p.name != "temp" and (p / folder_person_photo).is_dir()
-        ]
-
-        if not persons:
-            return False
-
-        # Partition and load in parallel
-        partitions = self._partition_list(persons, self.MAX_WORKERS)
-
-        with ThreadPoolExecutor(max_workers=self.MAX_WORKERS) as executor:
-            futures = [executor.submit(self._load_images_from_persons, part) for part in partitions]
-            for future in futures:
+        Implementation (you can copy this):
+            def save_model(self) -> bool:
+                if self.classifier is None:
+                    logger.error("No classifier to save")
+                    return False
                 try:
-                    future.result()
+                    self.model_path.parent.mkdir(parents=True, exist_ok=True)
+                    with open(self.model_path, 'wb') as f:
+                        pickle.dump(self.classifier, f)
+                    logger.info(f"Model saved to {self.model_path}")
+                    return True
                 except Exception as e:
-                    logger.error(f"Error in parallel loading: {e}")
+                    logger.error(f"Error saving model: {e}")
+                    return False
+        """
+        pass
 
-        return len(self.train_data) > 0
+    # ============================================================
+    # REQUIRED: Prediction Methods
+    # ============================================================
 
-    def evaluate(self) -> None:
-        """Evaluate classifier on test set."""
-        if not self.test_data or self.classifier is None:
-            logger.warning("No test data or classifier for evaluation")
-            return
+    @abstractmethod
+    def predict(self, encoding: np.ndarray) -> str:
+        """Predict single face encoding (low-level).
 
-        X_test, y_test = self._prepare_test_data()
-        y_pred = self.classifier.predict(X_test)
+        Args:
+            encoding: Face encoding from face_recognition.face_encodings()
+                     Shape: (128,) for face_recognition library
 
-        total = len(self.train_data) + len(self.test_data)
-        test_pct = (len(self.test_data) * 100) / total
-        train_pct = 100 - test_pct
+        Returns:
+            Person name string
 
-        logger.info(f"Train set: {train_pct:.1f}%")
-        logger.info(f"Test set: {test_pct:.1f}%")
+        Must:
+        1. Call self.classifier.predict([encoding])
+        2. Return the name
+        3. Handle "Unknown" if not confident
 
-        try:
-            self.accuracy = round(metrics.accuracy_score(y_test, y_pred), 6)
-            logger.info(f"Accuracy: {self.accuracy}")
-        except Exception as e:
-            logger.error(f"Error calculating accuracy: {e}")
+        Example (KNN):
+            def predict(self, encoding: np.ndarray) -> str:
+                distances, indices = self.classifier.kneighbors([encoding])
+                if distances[0][0] <= self.threshold:
+                    return self.classifier.predict([encoding])[0]
+                else:
+                    return self.UNKNOWN_LABEL
+
+        Example (SVM):
+            def predict(self, encoding: np.ndarray) -> str:
+                prediction = self.classifier.predict([encoding])[0]
+                return prediction
+        """
+        pass
 
     def predict_from_image(self, image_path: str) -> Tuple[np.ndarray, str]:
-        """Predict faces in an image and draw results."""
-        if self.classifier is None:
-            raise ValueError("Classifier not trained or loaded")
+        """Predict from image file and draw results.
 
-        image = self._load_and_resize_image(image_path)
-        face_locations = face_recognition.face_locations(image)
+        Args:
+            image_path: Path to image file
 
-        if not face_locations:
-            return image, self.UNKNOWN_LABEL
+        Returns:
+            Tuple of (annotated_frame, person_name)
+            - annotated_frame: Image with bounding boxes and names
+            - person_name: Name of person found (or "Unknown")
 
-        face_encodings = face_recognition.face_encodings(
-            image,
-            known_face_locations=face_locations
-        )
+        Must:
+        1. Load image from file
+        2. Detect faces via face_recognition.face_locations()
+        3. Get encodings via face_recognition.face_encodings()
+        4. Predict each encoding
+        5. Draw boxes and labels on image
+        6. Return image and name
 
-        predictions = [
-            (self.predict(enc), loc) for enc, loc in zip(face_encodings, face_locations)
-        ]
+        This is already implemented in ClassifierBase, you inherit it.
+        """
+        pass
 
-        return self._draw_predictions_on_image(image, predictions)
+    def predict_webcam(self, frame: np.ndarray) -> Tuple[np.ndarray, int, str]:
+        """Predict from video frame and draw results.
 
-    def predict_from_webcam(self, frame: np.ndarray) -> Tuple[np.ndarray, int, str]:
-        """Predict faces in a webcam frame and draw results."""
-        if self.classifier is None:
-            raise ValueError("Classifier not trained or loaded")
+        Args:
+            frame: Video frame from camera (BGR, numpy array)
 
-        face_locations = face_recognition.face_locations(frame)
+        Returns:
+            Tuple of (annotated_frame, counter, person_name)
+            - annotated_frame: Frame with bounding boxes and names
+            - counter: Consecutive frames with same person
+            - person_name: Name of person (or empty string if none)
 
-        if not face_locations:
-            self.counter_frame = 0
-            return frame, self.counter_frame, ""
+        Must:
+        1. Detect faces in frame
+        2. Get encodings
+        3. Predict each
+        4. Draw boxes and labels
+        5. Track consecutive frames with same person
+        6. Return frame + metadata
 
-        face_encodings = face_recognition.face_encodings(frame)
-        predictions = [
-            (self.predict(enc), loc) for enc, loc in zip(face_encodings, face_locations)
-        ]
+        Return format IMPORTANT:
+            - counter increases if same person detected consecutively
+            - counter resets to 0 if different person or no faces
+            - Used to determine "confident identification" threshold
 
-        return self._draw_predictions_on_webcam(frame, predictions)
+        This is already implemented in ClassifierBase, you inherit it.
+        """
+        pass
+
+    # ============================================================
+    # REQUIRED: Helper Methods (in ClassifierBase)
+    # ============================================================
+
+    def _load_training_data(self) -> bool:
+        """Load training data from person directories.
+
+        Must:
+        1. Scan person_data/ directory
+        2. For each person, load photos
+        3. Extract face encodings
+        4. Split into train/test sets
+        5. Populate self.train_data and self.test_data
+
+        Returns:
+            True if data loaded successfully
+
+        Already implemented in ClassifierBase.
+        """
+        pass
+
+    def _prepare_training_data(self) -> Tuple[List, List]:
+        """Prepare features and labels from train_data.
+
+        Returns:
+            Tuple of (X_train, y_train)
+            - X_train: List of encodings (128-d vectors)
+            - y_train: List of person names (strings)
+
+        Example:
+            X_train = [enc.encoding for enc in self.train_data]
+            y_train = [enc.name for enc in self.train_data]
+            return X_train, y_train
+        """
+        pass
+
+    def _prepare_test_data(self) -> Tuple[List, List]:
+        """Prepare features and labels from test_data.
+
+        Returns:
+            Tuple of (X_test, y_test)
+        """
+        pass
+
+    def evaluate(self) -> None:
+        """Evaluate classifier on test set.
+
+        Must:
+        1. Get test features/labels
+        2. Make predictions
+        3. Calculate accuracy score
+        4. Store in self.accuracy
+
+        Already implemented in ClassifierBase.
+        """
+        pass
+
+    # ============================================================
+    # REQUIRED: Drawing Methods (in ClassifierBase)
+    # ============================================================
 
     @staticmethod
     def _load_and_resize_image(image_path: str, max_dimension: int = 400) -> np.ndarray:
-        """Load and resize image to manageable size."""
-        image = face_recognition.load_image_file(image_path)
-        h, w = image.shape[:2]
+        """Load and resize image to manageable size.
 
-        if w < h:
-            new_w = max_dimension
-            new_h = int(h * (max_dimension / w))
-        else:
-            new_h = max_dimension
-            new_w = int(w * (max_dimension / h))
-
-        return cv2.resize(image, (new_w, new_h))
+        Already implemented in ClassifierBase.
+        """
+        pass
 
     @staticmethod
-    def _draw_predictions_on_image(image: np.ndarray, predictions: List) -> Tuple[np.ndarray, str]:
-        """Draw prediction boxes and labels on image."""
-        pil_image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-        draw = ImageDraw.Draw(pil_image)
+    def _draw_predictions_on_image(
+            image: np.ndarray,
+            predictions: List
+    ) -> Tuple[np.ndarray, str]:
+        """Draw boxes and labels on static image.
 
-        last_name = ClassifierBase.UNKNOWN_LABEL
+        Args:
+            image: Image array
+            predictions: List of (name, (top, right, bottom, left)) tuples
 
-        for name, (top, right, bottom, left) in predictions:
-            last_name = name
-            draw.rectangle(((left, top), (right, bottom)), outline=(0, 255, 0), width=2)
-            draw.text((left, top - 10), str(name), fill=(0, 255, 0))
+        Returns:
+            Tuple of (annotated_image, last_name)
 
-        del draw
-        return cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR), last_name
+        Already implemented in ClassifierBase.
+        """
+        pass
 
-    def _draw_predictions_on_webcam(self, frame: np.ndarray, predictions: List) -> Tuple[
-        np.ndarray, int, str]:
-        """Draw prediction boxes and labels on webcam frame."""
-        pil_frame = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-        draw = ImageDraw.Draw(pil_frame)
+    def _draw_predictions_on_webcam(
+            self,
+            frame: np.ndarray,
+            predictions: List
+    ) -> Tuple[np.ndarray, int, str]:
+        """Draw boxes on video frame and track person.
 
-        current_name = None
+        Args:
+            frame: Video frame
+            predictions: List of (name, location) tuples
 
-        for name, (top, right, bottom, left) in predictions:
-            current_name = name
-            draw.rectangle(((left, top), (right, bottom)), outline=(0, 255, 0), width=2)
-            draw.text((left, top - 10), str(name), fill=(0, 255, 0))
+        Returns:
+            Tuple of (annotated_frame, counter, identified_name)
 
-        del draw
-        frame = cv2.cvtColor(np.array(pil_frame), cv2.COLOR_RGB2BGR)
+        Tracks:
+        - self.identified_name: Current person
+        - self.counter_frame: Frames with same person
 
-        # Update frame counter for stable identification
-        if len(predictions) == 1 and current_name:
-            if self.identified_name == current_name:
-                self.counter_frame += 1
-            elif current_name != self.UNKNOWN_LABEL:
-                self.identified_name = current_name
-                self.counter_frame = 0
-        else:
-            self.counter_frame = 0
+        Already implemented in ClassifierBase.
+        """
+        pass
 
-        return frame, self.counter_frame, self.identified_name
+    # ============================================================
+    # OPTIONAL: Configuration Methods
+    # ============================================================
+
+    def set_threshold(self, threshold: float) -> None:
+        """Set confidence threshold (KNN only).
+
+        Args:
+            threshold: Value between 0.0 and 1.0
+
+        Example (KNN):
+            def set_threshold(self, threshold: float) -> None:
+                if not 0 <= threshold <= 1:
+                    raise ValueError("Threshold must be 0-1")
+                self.threshold = threshold
+
+        Not needed for SVM.
+        """
+        pass
+
+
+# ============================================================
+# VALIDATION CHECKLIST
+# ============================================================
+"""
+Before running FaceScanner, verify your classifier has:
+
+For KNNClassifier:
+  ✓ def __init__(model_path, n_neighbors=None, weight="distance")
+  ✓ def train() -> bool
+  ✓ def predict(encoding: np.ndarray) -> str
+  ✓ def set_threshold(threshold: float)
+  ✓ self.threshold attribute
+  ✓ Inherits from ClassifierBase or has all required methods
+
+For SVMClassifier:
+  ✓ def __init__(model_path, gamma="scale")
+  ✓ def train() -> bool
+  ✓ def predict(encoding: np.ndarray) -> str
+  ✓ Inherits from ClassifierBase or has all required methods
+
+For Both:
+  ✓ self.classifier (sklearn object)
+  ✓ self.model_path (Path)
+  ✓ self.accuracy (float)
+  ✓ self.train_data (List[FaceEncoding])
+  ✓ self.test_data (List[FaceEncoding])
+  ✓ self.identified_name (str)
+  ✓ self.counter_frame (int)
+  ✓ def load_model() -> bool
+  ✓ def save_model() -> bool
+  ✓ def predict_from_image(path) -> (ndarray, str)
+  ✓ def predict_webcam(frame) -> (ndarray, int, str)
+  ✓ def evaluate() -> None
+"""
+
+# ============================================================
+# EXAMPLE: How Your Class Should Look
+# ============================================================
+
+"""
+from algorithms.classifier_base import ClassifierBase
+from sklearn.neighbors import KNeighborsClassifier
+import math
+
+class KNNClassifier(ClassifierBase):
+    \"\"\"Your KNN implementation.\"\"\"
+
+    def __init__(self, model_path, n_neighbors=None, weight="distance"):
+        super().__init__("KNN", model_path)
+        self.n_neighbors = n_neighbors
+        self.weight = weight
+        self.threshold = 0.6
+
+    def train(self) -> bool:
+        \"\"\"Implement training logic.\"\"\"
+        # See artifact: knn_classifier.py
+        pass
+
+    def predict(self, encoding: np.ndarray) -> str:
+        \"\"\"Implement prediction logic.\"\"\"
+        # See artifact: knn_classifier.py
+        pass
+
+# That's it! Everything else is inherited from ClassifierBase.
+"""

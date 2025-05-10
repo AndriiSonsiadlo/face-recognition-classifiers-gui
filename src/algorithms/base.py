@@ -8,7 +8,7 @@ import face_recognition
 import numpy as np
 from PIL import ImageDraw, Image
 
-from src.core.logger import AppLogger
+from core.logger import AppLogger
 
 logger = AppLogger().get_logger(__name__)
 
