@@ -7,28 +7,16 @@ import cv2
 import face_recognition
 import numpy as np
 from PIL import ImageDraw, Image
+from sklearn.model_selection import train_test_split
 
+from algorithms.face_encoding import FaceEncoding
 from core.logger import AppLogger
 
 logger = AppLogger().get_logger(__name__)
 
 
-class FaceEncoding:
-    """Represents a face encoding with its label."""
-
-    def __init__(self, encoding: np.ndarray, name: str):
-        self.encoding = encoding
-        self.name = name
-
-    def to_tuple(self) -> Tuple[np.ndarray, str]:
-        return (self.encoding, self.name)
-
-
 class ClassifierBase(ABC):
-    """Abstract base class for face classifiers."""
-
     MAX_WORKERS = 8
-    TRAIN_SPLIT_THRESHOLD = 5
     UNKNOWN_LABEL = "Unknown"
 
     def __init__(self, model_name: str, model_path: Optional[Path] = None, verbose: bool = True):
@@ -44,14 +32,133 @@ class ClassifierBase(ABC):
         self.identified_name = ""
         self.counter_frame = 0
 
+        self.train_persons: List[str] = []
+        self.test_persons: List[str] = []
+
     @abstractmethod
     def train(self) -> bool:
         pass
 
     @abstractmethod
     def predict(self, encoding: np.ndarray) -> str:
-        """Predict label for a single face encoding."""
         pass
+
+    def _load_training_data(self) -> bool:
+        try:
+            self.train_data.clear()
+            self.test_data.clear()
+            self.train_persons.clear()
+            self.test_persons.clear()
+
+            from services import person_service
+            persons = person_service.get_persons_with_photos(min_photos=1)
+            if not persons:
+                logger.warning("No persons with photos found")
+                return False
+
+            total_encodings = 0
+
+            for person in persons:
+                person_encodings = []
+
+                for photo_path in person.photo_paths:
+                    try:
+                        if not Path(photo_path).exists():
+                            logger.warning(f"Photo not found: {photo_path}")
+                            continue
+
+                        image = face_recognition.load_image_file(str(photo_path))
+                        face_locations = face_recognition.face_locations(image)
+                        if not face_locations:
+                            logger.debug(f"No faces detected in: {photo_path}")
+                            continue
+
+                        encodings = face_recognition.face_encodings(
+                            image,
+                            known_face_locations=face_locations
+                        )
+
+                        for encoding in encodings:
+                            person_encodings.append(
+                                FaceEncoding(encoding=encoding, name=person.name)
+                            )
+                            total_encodings += 1
+
+                    except Exception as e:
+                        logger.warning(f"Error processing photo {photo_path}: {e}")
+                        continue
+
+                # split person's encodings into train/test
+                if len(person_encodings) > 0:
+                    if len(person_encodings) >= 2:
+                        # 80/20 split
+                        train, test = train_test_split(
+                            person_encodings,
+                            test_size=0.2,
+                            random_state=42
+                        )
+                        self.train_data.extend(train)
+                        self.test_data.extend(test)
+                    else:
+                        # only 1 encoding, put in training
+                        self.train_data.extend(person_encodings)
+
+                    # track persons in training
+                    if person.name not in self.train_persons:
+                        self.train_persons.append(person.name)
+                    if any(fe.name == person.name for fe in self.test_data):
+                        if person.name not in self.test_persons:
+                            self.test_persons.append(person.name)
+
+            if not self.train_data:
+                logger.error("No training data extracted from persons")
+                return False
+
+            logger.info(
+                f"Loaded {total_encodings} encodings from {len(persons)} persons. "
+                f"Train: {len(self.train_data)}, Test: {len(self.test_data)}"
+            )
+            return True
+
+        except Exception as e:
+            logger.exception(f"Error loading training data: {e}")
+            return False
+
+    def _prepare_training_data(self) -> Tuple[List, List]:
+        try:
+            x_train = [enc.encoding for enc in self.train_data]
+            y_train = [enc.name for enc in self.train_data]
+            return x_train, y_train
+        except Exception as e:
+            logger.exception(f"Error preparing training data: {e}")
+            return [], []
+
+    def _prepare_test_data(self) -> Tuple[List, List]:
+        try:
+            x_test = [enc.encoding for enc in self.test_data]
+            y_test = [enc.name for enc in self.test_data]
+            return x_test, y_test
+        except Exception as e:
+            logger.exception(f"Error preparing test data: {e}")
+            return [], []
+
+    def evaluate(self) -> None:
+        try:
+            if not self.test_data or self.classifier is None:
+                logger.warning("Cannot evaluate: no test data or classifier")
+                self.accuracy = 0.0
+                return
+
+            x_test, y_test = self._prepare_test_data()
+            predictions = self.classifier.predict(x_test)
+            correct = sum(1 for p, t in zip(predictions, y_test) if p == t)
+            self.accuracy = correct / len(y_test) if y_test else 0.0
+
+            logger.info(f"Model accuracy: {self.accuracy:.2%}")
+
+        except Exception as e:
+            logger.exception(f"Error evaluating model: {e}")
+            self.accuracy = 0.0
 
     def load_model(self) -> bool:
         try:
@@ -68,7 +175,6 @@ class ClassifierBase(ABC):
             return False
 
     def save_model(self) -> bool:
-        """Save trained model to disk."""
         if self.classifier is None:
             logger.error("No classifier to save")
             return False
@@ -133,7 +239,6 @@ class ClassifierBase(ABC):
 
     @staticmethod
     def _load_and_resize_image(image_path: str, max_dimension: int = 400) -> np.ndarray:
-        """Load and resize image to manageable size."""
         image = face_recognition.load_image_file(image_path)
         h, w = image.shape[:2]
 
@@ -148,7 +253,6 @@ class ClassifierBase(ABC):
 
     @staticmethod
     def _draw_predictions_on_image(image: np.ndarray, predictions: List) -> Tuple[np.ndarray, str]:
-        """Draw prediction boxes and labels on image."""
         pil_image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         draw = ImageDraw.Draw(pil_image)
 
@@ -162,8 +266,8 @@ class ClassifierBase(ABC):
         del draw
         return cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR), last_name
 
-    def _draw_predictions_on_webcam(self, frame: np.ndarray, predictions: List) -> Tuple[np.ndarray, int, str]:
-        """Draw prediction boxes and labels on webcam frame."""
+    def _draw_predictions_on_webcam(self, frame: np.ndarray, predictions: List) -> Tuple[
+        np.ndarray, int, str]:
         pil_frame = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
         draw = ImageDraw.Draw(pil_frame)
 
@@ -177,7 +281,6 @@ class ClassifierBase(ABC):
         del draw
         frame = cv2.cvtColor(np.array(pil_frame), cv2.COLOR_RGB2BGR)
 
-        # Update frame counter for stable identification
         if len(predictions) == 1 and current_name:
             if self.identified_name == current_name:
                 self.counter_frame += 1

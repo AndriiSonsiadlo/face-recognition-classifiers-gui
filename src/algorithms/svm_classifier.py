@@ -2,21 +2,18 @@ from pathlib import Path
 
 import numpy as np
 
-from algorithms.classifier_base import ClassifierInterface
+from algorithms import ClassifierBase
 from core.logger import AppLogger
 
 logger = AppLogger().get_logger(__name__)
 
 
-class SVMClassifier(ClassifierInterface):
-    """Support Vector Machine classifier for face recognition."""
-
+class SVMClassifier(ClassifierBase):
     def __init__(self, model_path: Path, gamma: str = "scale", verbose: bool = True):
         super().__init__("SVM", model_path, verbose)
         self.gamma = gamma if gamma in ("auto", "scale") else "scale"
 
     def train(self) -> bool:
-        """Train SVM classifier."""
         if not self._load_training_data():
             logger.warning("No training data found")
             return False
@@ -43,7 +40,6 @@ class SVMClassifier(ClassifierInterface):
             return False
 
     def predict(self, encoding: np.ndarray) -> str:
-        """Predict label for a single face encoding."""
         if self.classifier is None:
             raise ValueError("Classifier not trained")
 

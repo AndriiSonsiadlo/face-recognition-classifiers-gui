@@ -4,15 +4,13 @@ from typing import Optional
 
 import numpy as np
 
-from algorithms.classifier_base import ClassifierInterface
+from algorithms import ClassifierBase
 from core.logger import AppLogger
 
 logger = AppLogger().get_logger(__name__)
 
 
-class KNNClassifier(ClassifierInterface):
-    """K-Nearest Neighbors classifier for face recognition."""
-
+class KNNClassifier(ClassifierBase):
     def __init__(self, model_path: Path, n_neighbors: Optional[int] = None,
                  weight: str = "distance", verbose: bool = True):
         super().__init__("KNN", model_path, verbose)
@@ -22,7 +20,6 @@ class KNNClassifier(ClassifierInterface):
         self.threshold = 0.6
 
     def train(self) -> bool:
-        """Train KNN classifier."""
         if not self._load_training_data():
             logger.warning("No training data found")
             return False
@@ -57,7 +54,6 @@ class KNNClassifier(ClassifierInterface):
             return False
 
     def predict(self, encoding: np.ndarray) -> str:
-        """Predict label with distance threshold."""
         if self.classifier is None:
             raise ValueError("Classifier not trained")
 
@@ -74,7 +70,6 @@ class KNNClassifier(ClassifierInterface):
             return self.UNKNOWN_LABEL
 
     def set_threshold(self, threshold: float) -> None:
-        """Set the distance threshold for face matching."""
         if not 0 <= threshold <= 1:
             raise ValueError("Threshold must be between 0 and 1")
         self.threshold = threshold

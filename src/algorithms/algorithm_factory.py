@@ -6,24 +6,26 @@ logger = AppLogger().get_logger(__name__)
 
 
 class AlgorithmFactory:
-    """Factory for creating appropriate classifier instances."""
-
     @staticmethod
     def create(model: ModelMetadata):
-        """Create appropriate classifier based on model config."""
         try:
+            from algorithms.algorithm_wrapper import AlgorithmWrapper
             if model.algorithm == Algorithm.KNN:
                 from .knn_classifier import KNNClassifier
-                return KNNClassifier(
-                    model_path=model.clf_path,
-                    n_neighbors=model.n_neighbors,
-                    weight=model.weight
+                return AlgorithmWrapper(
+                    KNNClassifier(
+                        model_path=model.clf_path,
+                        n_neighbors=model.n_neighbors,
+                        weight=model.weight
+                    )
                 )
             elif model.algorithm == Algorithm.SVM:
                 from .svm_classifier import SVMClassifier
-                return SVMClassifier(
-                    model_path=model.clf_path,
-                    gamma=model.gamma
+                return AlgorithmWrapper(
+                    SVMClassifier(
+                        model_path=model.clf_path,
+                        gamma=model.gamma
+                    )
                 )
             else:
                 raise ValueError(f"Unknown algorithm: {model.algorithm}")
