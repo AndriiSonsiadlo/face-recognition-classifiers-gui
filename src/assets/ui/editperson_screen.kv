@@ -94,17 +94,14 @@
                                     font_name: font_light
 
                                 CustomInput:
-                                    id:create_person_name
+                                    id:name
                                     size_hint: (2, 1)
-                                    hint_text:"Person name"
+                                    hint_text:"Full name"
                                     text_size: self.size
                                     valign:'middle'
                                     halign:'left'
                                     color: normal_text_color
                                     font_name: font_light
-
-
-
 
                             BoxLayout:
                                 orientation:'horizontal'
@@ -118,7 +115,7 @@
                                     font_name: font_light
 
                                 CustomInput:
-                                    id:create_person_age
+                                    id:age
                                     size_hint: (2, 1)
                                     hint_text:"Age"
                                     text_size: self.size
@@ -146,14 +143,13 @@
                                         orientation: 'horizontal'
                                         size_hint_x: .75
                                         CustomRadioButtonSec:
-                                            id: create_person_gender_male
+                                            id: gender_male
                                             valign:'middle'
                                             halign:'right'
                                             group: 'gender2'
                                             active: True
                                         Label:
                                             text: "Male"
-                                            #text_size: self.size
                                             size_hint:
                                             valign:'middle'
                                             font_name: font_light
@@ -164,13 +160,12 @@
                                         orientation: 'horizontal'
                                         size_hint_x: 0.9
                                         CustomRadioButtonSec:
-                                            id: create_person_gender_female
+                                            id: gender_female
                                             valign:'middle'
                                             halign:'right'
                                             group: 'gender2'
                                         Label:
                                             text: 'Female'
-                                            #text_size: self.size
                                             valign:'middle'
                                             font_name: font_light
                                             color: normal_text_color
@@ -189,9 +184,9 @@
                                     font_name: font_light
 
                                 CustomInput:
-                                    id:create_person_nationality
+                                    id:nationality
                                     size_hint: (2, 1)
-                                    hint_text:"nationality"
+                                    hint_text:"Nationality"
                                     text_size: self.size
                                     valign:'middle'
                                     halign:'left'
@@ -212,7 +207,7 @@
                                     font_name: font_light
 
                                 CustomInput:
-                                    id:create_person_details
+                                    id:details
                                     size_hint: (2, 1)
                                     hint_text:"Details"
                                     text_size: self.size
@@ -233,7 +228,7 @@
                                     font_name: font_light
 
                                 CustomInput:
-                                    id:create_contact_phone
+                                    id:contact_phone
                                     multiline:False
                                     size_hint: (2, 1)
                                     hint_text:"+48  888 - 888 - 888"
@@ -324,7 +319,6 @@
                         BoxLayout:
                             orientation: 'horizontal'
 
-
                             RoundButton:
                                 id:cancel_btn
                                 size_hint_y:None
@@ -332,8 +326,7 @@
                                 height:70
                                 pos_hint: {'top': 1}
                                 on_release:
-                                    root.manager.transition.direction = "right"
-                                    root.manager.current = "persons"
+                                    root.cancel_edit()
                                 Label:
                                     id:cancel_person_btn_text
                                     center_y: self.parent.center_y+15
@@ -364,7 +357,7 @@
                                 height:70
                                 pos_hint: {'top': 1}
                                 on_release:
-                                    root.presenter.update_person()
+                                    root.save_changes()
                                 Label:
                                     id:add_person_btn_text
                                     center_y: self.parent.center_y+15
@@ -385,9 +378,6 @@
                                     opacity:0.6
                                     mipmap:True
                         Label:
-
-
-
 
                 BoxLayout:
                     #vertical layout - contains model info
@@ -415,10 +405,8 @@
                         id:preview_photo
                         source: 'assets/images/default-user.png'
                         allow_stretch: True
-                        #size_hint_y:None
                         keep_ratio:True
                         on_press: root.popup_photo(self.source)
-                        #height:50
                     Label:
                         id:preview_photo_name
                         size_hint_y:None
@@ -432,7 +420,6 @@
                         center_y: preview_photo.center_y-preview_photo.height/2 + 35
                         center_x: preview_photo.center_x
                         font_size: '13sp'
-
 
                     BoxLayout: #next/previous photo button box
                         orientation: 'horizontal'
@@ -464,7 +451,7 @@
                                 root.form_presenter.next_photo()
                         Label:
 
-                    BoxLayout: #next/previous photo button box
+                    BoxLayout: #crop/face detection buttons
                         orientation: 'horizontal'
                         size_hint_y:None
                         height:40
@@ -472,7 +459,7 @@
                             orientation: 'vertical'
 
                         RoundButton:
-                            id: previous_photo_btn
+                            id: crop_btn
                             text:"Crop"
                             size_hint_x:2
                             size_hint_y:None
@@ -484,7 +471,7 @@
                             size_hint_x:None
                             width:10
                         RoundButton:
-                            id: next_photo_btn
+                            id: face_detection_btn
                             text:"Face detection"
                             size_hint_x:2
                             size_hint_y:None
@@ -507,26 +494,3 @@
                         center_y: preview_photo.center_y-preview_photo.height/2 + 35
                         center_x: preview_photo.center_x
                         font_size: '13sp'
-
-
-
-
-
-
-
-
-
-                #Label:
-                #    size_hint_y:None
-                #    height:10
-                #Image:
-                #    id:cropped_area
-                #    source: ''
-                #Label:
-                #    size_hint_y:None
-                #    height:15
-
-
-
-
-

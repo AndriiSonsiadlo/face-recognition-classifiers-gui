@@ -14,14 +14,12 @@ class AddPersonPresenter(BasePresenter):
         self._initialize_data()
 
     def _initialize_data(self) -> None:
-        """Initialize data from registries."""
         try:
             logger.info("AddPersonPresenter initialized")
         except Exception as e:
             logger.exception("Error initializing PersonsPresenter")
 
     def start(self) -> None:
-        """Start presenter operations."""
         try:
             self._update_view()
             logger.info("PersonsPresenter started")
@@ -29,11 +27,9 @@ class AddPersonPresenter(BasePresenter):
             logger.exception("Error starting PersonsPresenter")
 
     def stop(self) -> None:
-        """Stop presenter operations."""
         logger.info("PersonsPresenter stopped")
 
     def refresh(self) -> None:
-        """Refresh data and UI."""
         try:
             person_service.refresh()
             self._update_view()
@@ -41,7 +37,6 @@ class AddPersonPresenter(BasePresenter):
             logger.exception("Error refreshing PersonsPresenter")
 
     def _update_view(self) -> None:
-        """Update view with current data."""
         try:
             self.view.form_presenter.clear_inputs()
         except Exception as e:
@@ -52,14 +47,14 @@ class AddPersonPresenter(BasePresenter):
 
         try:
             new = PersonMetadata(
-                name=self.view.ids.create_person_name.text,
-                age=self.view.ids.create_person_age.text,
+                name=self.view.ids.name.text,
+                age=self.view.ids.age.text,
                 gender=(Gender.MALE if self.view.ids.gender_male.active == True else Gender.FEMALE),
-                nationality=self.view.ids.create_person_nationality.text,
-                details=self.view.ids.create_person_details.text,
-                contact_phone=self.view.ids.create_contact_phone.text,
+                nationality=self.view.ids.nationality.text,
+                details=self.view.ids.details.text,
+                contact_phone=self.view.ids.contact_phone.text,
             )
-        except ValueError as e:
+        except Exception as e:
             self.show_error(title="Validation error", message=str(e))
             return
 

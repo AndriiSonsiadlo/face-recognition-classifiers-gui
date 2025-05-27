@@ -13,7 +13,6 @@ class PersonsPresenter(BasePresenter):
         self._initialize_data()
 
     def _initialize_data(self) -> None:
-        """Initialize data from registries."""
         try:
             person_service.refresh()
 
@@ -26,19 +25,15 @@ class PersonsPresenter(BasePresenter):
             logger.exception("Error initializing PersonsPresenter")
 
     def start(self) -> None:
-        """Start presenter operations."""
         try:
-            self._update_view()
             logger.info("PersonsPresenter started")
         except Exception as e:
             logger.exception("Error starting PersonsPresenter")
 
     def stop(self) -> None:
-        """Stop presenter operations."""
         logger.info("PersonsPresenter stopped")
 
     def refresh(self) -> None:
-        """Refresh data and UI."""
         try:
             person_service.refresh()
             self._update_view()
@@ -46,8 +41,10 @@ class PersonsPresenter(BasePresenter):
             logger.exception("Error refreshing PersonsPresenter")
 
     def _update_view(self) -> None:
-        """Update view with current data."""
         try:
+            if self.selected_person:
+                self.view.set_person_info(self.selected_person)
+
             if hasattr(self.view.ids, 'rv') and not self.view.ids.rv.data:
                 logger.info("Updating persons recyclerview")
                 if person_service.registry.get_count():
@@ -79,9 +76,9 @@ class PersonsPresenter(BasePresenter):
         self.clear_person_info()
 
     def clear_person_info(self):
-        self.view.ids.person_name.text = ''
-        self.view.ids.person_age.text = ''
-        self.view.ids.person_gender.text = ''
+        self.view.ids.name.text = ''
+        self.view.ids.age.text = ''
+        self.view.ids.gender.text = ''
         self.view.ids.nationality.text = ''
         self.view.ids.details.text = ''
         self.view.ids.contact_phone.text = ''

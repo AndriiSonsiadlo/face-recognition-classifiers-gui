@@ -18,11 +18,10 @@ class AddPerson(BaseScreen):
         self._initialize()
 
     def _initialize(self) -> None:
-        """Initialize screen resources."""
         try:
             self.presenter = AddPersonPresenter(self)
-            self.presenter.start()
             self.form_presenter= FormPersonPresenter(self)
+            self.presenter.start()
             self.form_presenter.start()
 
             self.logger.info("AddPersonScreen initialized successfully")
