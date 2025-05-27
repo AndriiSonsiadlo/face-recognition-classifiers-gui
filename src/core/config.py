@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Set, List, Dict
+from typing import Set, Dict
 
 from pydantic import BaseModel, validator
 
@@ -9,8 +9,8 @@ class PathConfig(BaseModel):
     BASE_DIR: Path = Path(__file__).parent.parent.parent
     SRC_DIR: Path = BASE_DIR / "src"
 
-    PERSON_DATA_DIR: Path = BASE_DIR / "person_data"
-    MODEL_DATA_DIR: Path = BASE_DIR / "model_data"
+    PERSON_DATA_DIR: Path = BASE_DIR / "person_data2"
+    MODEL_DATA_DIR: Path = BASE_DIR / "model_data2"
     TEMP_DIR: Path = BASE_DIR / "temp"
     STATS_DIR: Path = BASE_DIR / "statistics"
     ASSETS_DIR: Path = SRC_DIR / "assets"
@@ -19,10 +19,6 @@ class PathConfig(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-
-# ============================================================
-# UI Configuration
-# ============================================================
 
 class UIConfig(BaseModel):
     TEXT_COLORS: Dict[str, tuple] = {
@@ -37,16 +33,14 @@ class UIConfig(BaseModel):
         "train_model": "Train model",
         "completed": "Completed",
         "no_elements": "No elements",
+        "no_persons": "No persons",
+        "no_models": "No models",
         "start_webcam": "Turn on",
         "stop_webcam": "Turn off",
-        "load_photo": "Load Photo",
-        "clear_photo": "Clear Photo",
+        "load_photo": "Load photo",
+        "clear_photo": "Clear photo",
     }
 
-
-# ============================================================
-# Person Configuration
-# ============================================================
 
 class PersonConfig(BaseModel):
     ALLOWED_EXTENSIONS: Set[str] = {"png", "jpg", "jpeg", "bmp", "tiff"}
@@ -91,9 +85,6 @@ class MainConfig(BaseModel):
 
     @validator("paths", pre=False, always=True)
     def create_directories(cls, v: PathConfig, values):
-        """
-        Ensures main directories exist.
-        """
         os.makedirs(v.PERSON_DATA_DIR, exist_ok=True)
         os.makedirs(v.MODEL_DATA_DIR, exist_ok=True)
         os.makedirs(v.TEMP_DIR, exist_ok=True)
