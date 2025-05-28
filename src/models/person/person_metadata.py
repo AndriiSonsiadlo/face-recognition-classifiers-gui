@@ -63,8 +63,6 @@ class PersonMetadata(BaseModel):
 
 
 class ImageValidator:
-    """Validates image files."""
-
     @staticmethod
     def validate_image(file_path) -> bool:
         file_path = Path(file_path)

@@ -10,10 +10,6 @@ logger = AppLogger().get_logger(__name__)
 
 
 class ModelTrainer:
-    """
-    Receives a ModelMetadata object and modifies it.
-    """
-
     def __init__(self, metadata: ModelMetadata):
         self.meta = metadata
 
@@ -37,6 +33,7 @@ class ModelTrainer:
             return False
 
         try:
+            logger.info(f"Starting training for model: {self.meta.name}")
             ok = clf.train()
         except Exception as e:
             logger.error(f"Training failed due to internal error: {e}")
@@ -48,6 +45,14 @@ class ModelTrainer:
             self.meta.test_dataset_Y = clf.test_persons
             self.meta.accuracy = clf.accuracy
 
-            self.meta.save()
+            # Save metadata to JSON file
+            logger.info(f"Training completed successfully. Saving metadata for: {self.meta.name}")
+            save_success = self.meta.save()
+
+            if save_success:
+                logger.info(f"Model metadata JSON saved successfully: {self.meta.json_path}")
+            else:
+                logger.error(f"Failed to save model metadata JSON for: {self.meta.name}")
+                return False
 
         return ok

@@ -19,7 +19,6 @@ class BaseRegistry(ABC, Generic[T]):
         self.refresh()
 
     def refresh(self) -> None:
-        """Scan directory structure and rebuild in-memory list."""
         self.items.clear()
 
         for dirpath in self.root_dir.iterdir():
@@ -39,7 +38,7 @@ class BaseRegistry(ABC, Generic[T]):
 
     def add(self, item) -> bool:
         if self.exists(item.name):
-            logger.warning(f"Person {item.name} already exists")
+            logger.warning(f"Item {item.name} already exists")
             return False
 
         try:
@@ -98,8 +97,8 @@ class BaseRegistry(ABC, Generic[T]):
     def exists(self, name: str) -> bool:
         return self.get(name) is not None
 
-    def update(self, name: str, **kwargs) -> bool:
-        item = self.get(name)
+    def update(self, original_name: str, **kwargs) -> bool:
+        item = self.get(original_name)
         if not item:
             return False
 

@@ -9,8 +9,6 @@ logger = AppLogger().get_logger(__name__)
 
 
 class ModelRegistry(BaseRegistry):
-    """Registry for managing models and their data."""
-
     def __init__(self, root_dir: Optional[Path] = None):
         super().__init__(root_dir or config.paths.MODEL_DATA_DIR, ModelMetadata)
 

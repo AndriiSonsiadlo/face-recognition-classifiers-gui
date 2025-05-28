@@ -10,8 +10,6 @@ logger = AppLogger().get_logger(__name__)
 
 
 class PersonRegistry(BaseRegistry):
-    """Registry for managing persons and their data."""
-
     def __init__(self, root_dir: Optional[Path] = None):
         super().__init__(root_dir or config.paths.PERSON_DATA_DIR, PersonMetadata)
 
@@ -21,12 +19,12 @@ class PersonRegistry(BaseRegistry):
             item.photos_path.mkdir(exist_ok=True)
         return success
 
-    def update(self, name, new_name, **kwargs) -> None:
+    def update(self, original_name, new_name, **kwargs) -> None:
         kwargs['name'] = new_name
-        super().update(name, **kwargs)
-        if name != new_name:
+        super().update(original_name, **kwargs)
+        if original_name != new_name:
             os.rename(
-                config.paths.PERSON_DATA_DIR / name,
+                config.paths.PERSON_DATA_DIR / original_name,
                 config.paths.PERSON_DATA_DIR / new_name
             )
 
