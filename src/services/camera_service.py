@@ -16,13 +16,6 @@ class CameraError(Exception):
 
 
 class CameraService:
-    """Service responsible for interacting with the OpenCV camera.
-
-    - Runs a background thread that reads frames from the camera.
-    - Publishes frames to a thread-safe queue for consumers (presenter).
-    - Exposes start/stop and simple health checks.
-    """
-
     def __init__(self, port: int = 0, fps: int = 30, queue_size: int = 2):
         self.port = port
         self.fps = fps
@@ -105,10 +98,6 @@ class CameraService:
                 time.sleep(to_sleep)
 
     def read_now(self) -> Tuple[bool, Optional[object]]:
-        """Read the most recent frame from the queue (non-blocking).
-
-        Returns a tuple (ret, frame). If queue empty, returns (False, None).
-        """
         try:
             return self.frames.get_nowait()
         except queue.Empty:

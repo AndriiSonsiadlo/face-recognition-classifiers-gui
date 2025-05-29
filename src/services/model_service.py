@@ -49,11 +49,7 @@ class ModelService:
             return self.registry.get_all()
         return self.registry.search(query)
 
-    def update_model_threshold(
-            self,
-            name: str,
-            threshold: float
-    ) -> Optional[ModelMetadata]:
+    def update_model_threshold(self, name: str, threshold: float) -> Optional[ModelMetadata]:
         try:
             if not 0 <= threshold <= 1:
                 logger.error(f"Invalid threshold: {threshold}")
@@ -75,20 +71,7 @@ class ModelService:
             logger.exception(f"Error updating threshold for {name}: {e}")
             return None
 
-    def update_model_comment(
-            self,
-            name: str,
-            comment: str
-    ) -> Optional[ModelMetadata]:
-        """Update model comment.
-
-        Args:
-            name: Model name
-            comment: New comment
-
-        Returns:
-            Updated ModelMetadata or None
-        """
+    def update_model_comment(self, name: str, comment: str) -> Optional[ModelMetadata]:
         try:
             model = self.registry.get(name)
             if not model:
@@ -107,14 +90,6 @@ class ModelService:
             return None
 
     def delete_model(self, name: str) -> bool:
-        """Delete model and its data.
-
-        Args:
-            name: Model name
-
-        Returns:
-            True if successful
-        """
         try:
             success = self.registry.delete(name)
             if success:
@@ -134,20 +109,6 @@ class ModelService:
             count_train: int,
             count_test: int
     ) -> Optional[ModelMetadata]:
-        """Update model training results.
-
-        Args:
-            name: Model name
-            learning_time: Training time in seconds
-            accuracy: Model accuracy (0-1)
-            train_dataset: List of training samples
-            test_dataset: List of test samples
-            count_train: Count of training samples
-            count_test: Count of test samples
-
-        Returns:
-            Updated ModelMetadata or None
-        """
         try:
             model = self.registry.get(name)
             if not model:
@@ -172,6 +133,5 @@ class ModelService:
             return None
 
     def refresh(self) -> None:
-        """Refresh registry from disk."""
         self.registry.refresh()
         logger.info("Refreshed model registry")
