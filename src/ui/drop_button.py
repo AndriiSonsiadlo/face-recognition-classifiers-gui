@@ -1,13 +1,10 @@
-# Copyright (C) 2021 Andrii Sonsiadlo
-
 from pathlib import Path
 
 from kivy.core.window import Window
 
-from classes.widget_styles.widget_styles import RoundButton
+from ui.widget_styles import RoundButton
 
 
-# button to drag and drop files on
 class DropButton(RoundButton):
 	def __init__(self, **kwargs):
 		super().__init__(**kwargs)
@@ -22,9 +19,6 @@ class DropButton(RoundButton):
 
 		button_text = self.children[2].text
 
-		# print('box position', str(self.pos))
-		# print('box size', str(self.size))
-		# print('mouse position', window.mouse_pos)
 		within_box_width = window.mouse_pos[0] >= self.pos[0] and window.mouse_pos[0] <= self.pos[0] + self.size[0]
 		within_box_height = window.mouse_pos[1] >= self.pos[1] and window.mouse_pos[1] <= self.pos[1] + self.size[1]
 

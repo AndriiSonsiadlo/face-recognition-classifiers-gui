@@ -15,14 +15,6 @@ logger = AppLogger().get_logger(__name__)
 
 
 class FaceScannerPresenter(BasePresenter):
-    """Presenter for FaceScanner - handles business logic.
-
-    Responsibilities:
-    - Model and person data management
-    - Statistics recording and plotting
-    - Delegates camera operations to WebCameraPresenter
-    """
-
     def __init__(self, view):
         super().__init__(view)
         self.selected_camera = None
@@ -30,7 +22,6 @@ class FaceScannerPresenter(BasePresenter):
         self._initialize_data()
 
     def _initialize_data(self) -> None:
-        """Initialize data from registries."""
         try:
             model_service.refresh()
             person_service.refresh()
@@ -48,7 +39,6 @@ class FaceScannerPresenter(BasePresenter):
             logger.exception("Error initializing FaceScannerPresenter")
 
     def start(self) -> None:
-        """Start presenter operations."""
         try:
             self._update_view()
             logger.info("FaceScannerPresenter started")
@@ -56,11 +46,9 @@ class FaceScannerPresenter(BasePresenter):
             logger.exception("Error starting FaceScannerPresenter")
 
     def stop(self) -> None:
-        """Stop presenter operations."""
         logger.info("FaceScannerPresenter stopped")
 
     def refresh(self) -> None:
-        """Refresh data and UI."""
         try:
             model_service.refresh()
             person_service.refresh()
@@ -69,14 +57,18 @@ class FaceScannerPresenter(BasePresenter):
             logger.exception("Error refreshing FaceScannerPresenter")
 
     def _update_view(self) -> None:
-        """Update view with current data."""
         try:
-            # Update model count in view
+            models = self.get_available_models()
+            if not self.selected_model or self.selected_model and self.selected_model.name is not models:
+                if models:
+                    self.select_model(models[0])
+                else:
+                    self.selected_model = None
+
             if self.selected_model and hasattr(self.view.ids, 'number_people_model_text'):
                 count = len(self.selected_model.train_dataset_Y)
                 self.view.ids.number_people_model_text.text = str(count)
 
-            # Update person count
             if hasattr(self.view.ids, 'number_people_database_text'):
                 count = len(person_service.get_all_persons())
                 self.view.ids.number_people_database_text.text = str(count)
@@ -93,12 +85,7 @@ class FaceScannerPresenter(BasePresenter):
         except Exception as e:
             logger.exception("Error updating view")
 
-    # ============================================================
-    # Model Management
-    # ============================================================
-
     def get_available_models(self) -> list:
-        """Get all available model names."""
         try:
             models = model_service.get_all_models()
             return [m.name for m in models] if models else []
@@ -107,7 +94,6 @@ class FaceScannerPresenter(BasePresenter):
             return []
 
     def get_available_cameras(self) -> list:
-        """Get all available model names."""
         try:
             return [f"Port {p}" for p in camera_service.get_all_cameras()]
         except Exception as e:
@@ -115,22 +101,12 @@ class FaceScannerPresenter(BasePresenter):
             return []
 
     def get_selected_model_name(self) -> str:
-        """Get currently selected model name."""
         return self.selected_model.name if self.selected_model else "No models"
 
     def get_selected_camera_port(self) -> str:
-        """Get currently selected model name."""
         return f"Port {self.selected_camera}" if self.selected_camera is not None else "No cameras"
 
     def select_model(self, model_name: str) -> bool:
-        """Select a model by name.
-
-        Args:
-            model_name: Name of model to select
-
-        Returns:
-            True if successful
-        """
         try:
             model = model_service.get_model(model_name)
             if model:
@@ -153,21 +129,11 @@ class FaceScannerPresenter(BasePresenter):
             return False
 
     def get_model_person_count(self) -> int:
-        """Get number of persons in selected model."""
         if self.selected_model:
             return len(self.selected_model.train_dataset_Y)
         return 0
 
-    # ============================================================
-    # Statistics Management
-    # ============================================================
-
     def record_identification(self, success: bool) -> None:
-        """Record identification result.
-
-        Args:
-            success: True if correct, False if incorrect
-        """
         try:
             hour = TimeUtils.get_hour()
             day = TimeUtils.get_day()
@@ -187,7 +153,6 @@ class FaceScannerPresenter(BasePresenter):
             logger.exception("Error recording identification")
 
     def record_attempt(self) -> None:
-        """Record identification attempt."""
         try:
             hour = TimeUtils.get_hour()
             day = TimeUtils.get_day()
@@ -202,7 +167,6 @@ class FaceScannerPresenter(BasePresenter):
             logger.exception("Error recording attempt")
 
     def clear_statistics(self) -> None:
-        """Clear statistics file."""
         try:
             current_hour = TimeUtils.get_hour()
             current_day = TimeUtils.get_day()
@@ -224,12 +188,7 @@ class FaceScannerPresenter(BasePresenter):
         except Exception as e:
             logger.exception("Error clearing statistics")
 
-    # ============================================================
-    # Plot Management
-    # ============================================================
-
     def get_plot_path(self) -> str:
-        """Generate and return plot image path."""
         try:
             data_csv = []
             if config.stats.FILE_STATS_CSV.exists():
@@ -258,7 +217,6 @@ class FaceScannerPresenter(BasePresenter):
             return str(config.stats.FILE_RESULT_PLOT)
 
     def _process_stats_data(self, data_csv: list) -> tuple:
-        """Process statistics CSV data."""
         now = datetime.now()
         current_hour = now.hour
 
@@ -287,7 +245,6 @@ class FaceScannerPresenter(BasePresenter):
         return ok_y, nok_y, nnok_y, x
 
     def _create_plot(self, x: list, ok_y: list, nok_y: list, nnok_y: list) -> None:
-        """Create statistics plot."""
         try:
             series1 = np.array(ok_y)
             series2 = np.array(nok_y)
@@ -316,7 +273,6 @@ class FaceScannerPresenter(BasePresenter):
             logger.exception("Error creating plot")
 
     def _create_blank_plot(self) -> None:
-        """Create blank plot."""
         try:
             plt.figure(figsize=(10, 6))
             plt.title('Result of identification (per hour)')

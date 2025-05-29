@@ -123,7 +123,7 @@
                         color: header_text_color
                     Label:
                         id: number_people_model_text
-                        text: "None" #device part number
+                        text: str(len(root.presenter.selected_model.train_dataset_Y)) if root.presenter.selected_model else "None"
                         halign:"left"
                         text_size: self.size
                         font_name: font_light
@@ -244,7 +244,7 @@
                         size_hint_x:.9
 
                     Label:
-                        text:"Identificated: "
+                        text:"Identified: "
                         font_name: font_light
                         color: header_text_color
                         text_size: self.size

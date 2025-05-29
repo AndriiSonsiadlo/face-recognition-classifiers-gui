@@ -1,30 +1,16 @@
-import threading
 from pathlib import Path
 from typing import Optional
 
-from kivy.clock import Clock
+from kivy.clock import Clock, mainthread
 
 from algorithms import AlgorithmFactory
-from algorithms.algorithm_wrapper import AlgorithmWrapper
-from core.config import ModelConfig, config
 from core.logger import AppLogger
 from models.model.model_metadata import ModelMetadata
-from services.camera_service import CameraService, CameraError
 
 logger = AppLogger().get_logger(__name__)
 
 
 class WebCameraPresenter:
-    """Presenter for camera and face recognition operations.
-
-    Responsibilities:
-    - Load and manage ML algorithm
-    - Control camera start/stop
-    - Process frames and run predictions
-    - Photo loading and processing
-    - Callbacks to view
-    """
-
     POLL_INTERVAL = 1.0 / 30.0  # 30 FPS
 
     def __init__(self, view, camera_svc):
@@ -35,28 +21,16 @@ class WebCameraPresenter:
         self._is_running = False
 
     def start(self) -> None:
-        """Initialize presenter (called on screen init)."""
         logger.info("WebCameraPresenter started")
 
     def stop(self) -> None:
-        """Stop presenter (called on screen leave)."""
         try:
             self._stop_camera_impl()
             logger.info("WebCameraPresenter stopped")
         except Exception as e:
             logger.exception("Error stopping WebCameraPresenter")
 
-    # ============================================================
-    # Camera Control
-    # ============================================================
-
     def toggle_camera(self, camera_port: int, model: Optional[ModelMetadata]) -> None:
-        """Toggle camera on/off.
-
-        Args:
-            camera_port: Camera port selection (e.g., "Port 0")
-            model: ModelMetadata to load algorithm from
-        """
         try:
             if self._is_running:
                 self._stop_camera_impl()
@@ -67,31 +41,20 @@ class WebCameraPresenter:
             self.view.on_camera_error(str(e))
 
     def _start_camera_impl(self, camera_port: int, model: Optional[ModelMetadata]) -> None:
-        """Internal camera start implementation.
-
-        Args:
-            camera_port: Camera port string
-            model: Model to load
-        """
         try:
-            # if not model:
-            #     raise ValueError("No model selected")
+            if not model:
+                raise ValueError("No model selected")
 
-            # Extract port number from "Port 0" format
             if camera_port is None:
                 raise ValueError("No camera port selected")
 
-            # Load algorithm
-            # self._load_algorithm(model)
-            # if not self.algorithm:
-            #     pass
-                # raise RuntimeError("Failed to load algorithm")
+            self._load_algorithm(model)
+            if not self.algorithm:
+                raise RuntimeError("Failed to load algorithm")
 
-            # Start camera service
             self.camera_service.start(camera_port)
             self._is_running = True
 
-            # Schedule frame polling on Kivy main thread
             if self._poll_event:
                 Clock.unschedule(self._poll_event)
             self._poll_event = Clock.schedule_interval(
@@ -99,7 +62,6 @@ class WebCameraPresenter:
                 self.POLL_INTERVAL
             )
 
-            # Notify view
             self.view.on_camera_started()
             logger.info(f"Camera started on port {camera_port}")
 
@@ -109,21 +71,16 @@ class WebCameraPresenter:
             self.view.on_camera_error(str(e))
 
     def _stop_camera_impl(self) -> None:
-        """Internal camera stop implementation."""
         try:
-            # Unschedule polling
             if self._poll_event:
                 Clock.unschedule(self._poll_event)
                 self._poll_event = None
 
-            # Stop camera service
             self.camera_service.stop()
 
-            # Clear algorithm
             self.algorithm = None
             self._is_running = False
 
-            # Notify view
             self.view.on_camera_stopped()
             logger.info("Camera stopped")
 
@@ -131,38 +88,28 @@ class WebCameraPresenter:
             logger.exception("Error stopping camera")
             self.view.on_camera_error(str(e))
 
-    # ============================================================
-    # Frame Processing
-    # ============================================================
-
     def _poll_frame_impl(self, dt) -> None:
-        """Poll frames from camera service (called by Clock).
-
-        Args:
-            dt: Delta time from Clock
-        """
         try:
-            # if not self._is_running or not self.algorithm:
-            #     return
+            if not self._is_running or not self.algorithm:
+                return
 
-            # Read frame from camera queue
             ret, frame = self.camera_service.read_now()
             if not ret or frame is None:
                 return
 
-            # Run prediction
-            try:
-                # predicted_frame, counter, name = self.algorithm.predict_webcam(frame)
+            self.last_frame = frame.copy()
 
-                # Prepare prediction data
+            rgb_frame = frame[:, :, ::-1]
+            try:
+                annotated, counter, name = self.algorithm.predict_webcam(rgb_frame)
+
                 prediction_data = {
-                    'frame': frame,
-                    'name': "unknown",
-                    'counter': 2,
-                    'confidence': 0.0  # TODO: Extract from algorithm if available
+                    'frame': annotated,
+                    'name': name,
+                    'counter': counter,
+                    'confidence': 0.0
                 }
 
-                # Callback to view
                 self.view.on_frame_received(prediction_data)
 
             except Exception as e:
@@ -171,27 +118,13 @@ class WebCameraPresenter:
         except Exception as e:
             logger.exception("Error in frame polling")
 
-    # ============================================================
-    # Algorithm Management
-    # ============================================================
-
     def _load_algorithm(self, model: ModelMetadata) -> bool:
-        """Load ML algorithm from model.
-
-        Args:
-            model: ModelMetadata to load
-
-        Returns:
-            True if successful
-        """
         try:
             if not model:
                 raise ValueError("Model is None")
 
-            # Use factory to create classifier
             self.algorithm = AlgorithmFactory.create(model)
 
-            # Load model from disk
             if not self.algorithm.load_model():
                 logger.error(f"Failed to load model file: {model.clf_path}")
                 self.algorithm = None
@@ -205,17 +138,13 @@ class WebCameraPresenter:
             self.algorithm = None
             return False
 
-    # ============================================================
-    # Photo Loading
-    # ============================================================
+    def load_photo_from_file(self, model) -> None:
+        self._load_photo_threaded(model)
+        # thread = threading.Thread(target=self._load_photo_threaded, daemon=True)
+        # thread.start()
 
-    def load_photo_from_file(self) -> None:
-        """Load photo from file dialog in background thread."""
-        thread = threading.Thread(target=self._load_photo_threaded, daemon=True)
-        thread.start()
-
-    def _load_photo_threaded(self) -> None:
-        """Background thread for file dialog and photo processing."""
+    @mainthread
+    def _load_photo_threaded(self, model) -> None:
         try:
             import tkinter as tk
             from tkinter import filedialog
@@ -232,7 +161,7 @@ class WebCameraPresenter:
 
             image_path = str(photo_paths[0])
 
-            # Process image
+            self._load_algorithm(model)
             result = self._process_image_impl(image_path)
 
             if result:
@@ -251,14 +180,6 @@ class WebCameraPresenter:
             self.view.on_photo_error(str(e))
 
     def _process_image_impl(self, image_path: str) -> Optional[tuple]:
-        """Process image with loaded algorithm.
-
-        Args:
-            image_path: Path to image file
-
-        Returns:
-            Tuple of (frame, name) or None
-        """
         try:
             if not Path(image_path).exists():
                 raise FileNotFoundError(f"Image not found: {image_path}")
@@ -266,7 +187,6 @@ class WebCameraPresenter:
             if not self.algorithm:
                 raise RuntimeError("Algorithm not loaded. Start camera first or select a model.")
 
-            # Get prediction
             frame, name = self.algorithm.predict_from_image(image_path)
 
             logger.info(f"Image processed: {image_path} -> {name}")
@@ -276,14 +196,8 @@ class WebCameraPresenter:
             logger.exception(f"Error processing image: {image_path}")
             return None
 
-    # ============================================================
-    # State Queries
-    # ============================================================
-
     def is_camera_running(self) -> bool:
-        """Check if camera is currently running."""
         return self._is_running
 
     def is_algorithm_loaded(self) -> bool:
-        """Check if algorithm is loaded."""
         return self.algorithm is not None

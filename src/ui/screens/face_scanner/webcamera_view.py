@@ -11,8 +11,6 @@ logger = AppLogger().get_logger(__name__)
 
 
 class WebCameraView(Image):
-    """Kivy View - thin wrapper - delegates logic to presenter."""
-
     def __init__(self, presenter=None, **kwargs):
         super().__init__(**kwargs)
         self.presenter = presenter
@@ -44,7 +42,6 @@ class WebCameraView(Image):
 
     @mainthread
     def on_camera_started(self):
-        # update UI (buttons texts, disable/enable controls)
         try:
             if self.parent and hasattr(self.parent, "ids"):
                 self.parent.ids.on_off_btn.text = config.ui.TEXTS["stop_webcam"]
@@ -66,7 +63,6 @@ class WebCameraView(Image):
                 self.parent.ids.identification_btn.text = str(name)
                 self.parent.ids.identification_btn.disabled = False
                 self.parent.ids.identification_btn.opacity = 1
-                # call additional UI flows
                 self.parent.its_add_one()
         except Exception:
             logger.exception("Failed to set identification")
@@ -88,4 +84,3 @@ class WebCameraView(Image):
     @mainthread
     def show_error(self, message: str):
         logger.error("View error: %s", message)
-        # Optionally show a popup; left to integrator
