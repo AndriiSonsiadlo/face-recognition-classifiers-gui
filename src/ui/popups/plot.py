@@ -1,5 +1,3 @@
-# Copyright (C) 2021 Andrii Sonsiadlo
-
 import cv2
 from kivy.core.image import Texture
 from kivy.uix.modalview import ModalView

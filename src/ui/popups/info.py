@@ -1,5 +1,3 @@
-# Copyright (C) 2021 Andrii Sonsiadlo
-
 from kivy.uix.popup import Popup
 
 

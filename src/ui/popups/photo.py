@@ -1,5 +1,3 @@
-# Copyright (C) 2021 Andrii Sonsiadlo
-
 class MyPhoto:
 	size = 0
 

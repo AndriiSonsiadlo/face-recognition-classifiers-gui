@@ -5,10 +5,9 @@
     size: 400, 180
     background: 'assets/images/pressed.jpg'
     separator_color: header_text_color
+    title: 'Info'
     BoxLayout:
         orientation: 'vertical'
-        Label:
-            size_hint_y:.2
         BoxLayout:
             orientation: 'horizontal'
             Label:
@@ -81,7 +80,7 @@
             size_hint: 1,1
             BoxLayout:
                 #vertical layout - contains model info headers
-                id: person_infos
+                id: info
                 orientation:'vertical'
                 size_hint_y: 1
 
@@ -103,7 +102,7 @@
                         font_name: font_light
 
                     Label:
-                        id:person_name
+                        id:name
                         #size_hint_y:None
                         #height:30
                         text:'Name'
@@ -128,7 +127,7 @@
 
 
                     Label:
-                        id:person_age
+                        id:age
                         text:'Age'
                         font_name: font_light
                         text_size: self.size
@@ -150,7 +149,7 @@
                         font_name: font_light
 
                     Label:
-                        id:person_gender
+                        id:gender
                         text:'Gender'
                         font_name: font_light
                         text_size: self.size
@@ -404,3 +403,46 @@
                 size_hint_x:.4
         Label:
             size_hint_y:.2
+
+<TrainingProgressPopup>:
+    title_font: font_regular
+    title_color: normal_text_color
+    size_hint: None, None
+    size: 320, 160
+    background: 'assets/images/pressed.jpg'
+    separator_color: header_text_color
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: 20
+        spacing: 12
+
+        # Spacer
+        Widget:
+            size_hint_y: 0.3
+
+        # Cancel Button (centered)
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: 40
+
+            Widget:
+                size_hint_x: 0.3
+
+            RoundButton:
+                id: cancel_button
+                text: "Cancel"
+                size_hint: 0.4, None
+                height: 35
+                color: normal_text_color
+                font_name: font_light
+                font_size: '14sp'
+                on_release: root.on_cancel_pressed()
+
+            Widget:
+                size_hint_x: 0.3
+
+        # Bottom spacer
+        Widget:
+            size_hint_y: 0.2
