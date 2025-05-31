@@ -1,6 +1,3 @@
-#Copyright (C) 2021 Andrii Sonsiadlo
-
-# import the necessary packages
 import argparse
 import cv2
 

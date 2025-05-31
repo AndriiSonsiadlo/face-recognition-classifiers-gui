@@ -1,5 +1,3 @@
-#Copyright (C) 2021 Andrii Sonsiadlo
-
 import cv2
 
 def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):

@@ -1,6 +1,3 @@
-#Copyright (C) 2021 Andrii Sonsiadlo
-
-# import the necessary packages
 from imutils import paths
 from keras.preprocessing.image import img_to_array
 from sklearn.preprocessing import LabelBinarizer

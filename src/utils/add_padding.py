@@ -1,8 +1,8 @@
-#Copyright (C) 2021 Andrii Sonsiadlo
-
 import cv2
 import numpy as np
-from functions.img_resize import image_resize
+
+from utils.img_resize import image_resize
+
 
 def add_padding(image, ww, hh):
 

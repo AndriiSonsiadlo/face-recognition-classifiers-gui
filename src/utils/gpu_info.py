@@ -1,8 +1,3 @@
-#Copyright (C) 2021 Andrii Sonsiadlo
-
-#from tensorflow.python.client import device_lib
-#import tensorflow as tf
-
 def get_gpu_name():
     devices = device_lib.list_local_devices()
     gpu_name = 'No detected'
