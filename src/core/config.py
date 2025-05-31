@@ -9,8 +9,8 @@ class PathConfig(BaseModel):
     BASE_DIR: Path = Path(__file__).parent.parent.parent
     SRC_DIR: Path = BASE_DIR / "src"
 
-    PERSON_DATA_DIR: Path = BASE_DIR / "person_data2"
-    MODEL_DATA_DIR: Path = BASE_DIR / "model_data2"
+    PERSON_DATA_DIR: Path = BASE_DIR / "person_data"
+    MODEL_DATA_DIR: Path = BASE_DIR / "model_data"
     TEMP_DIR: Path = BASE_DIR / "temp"
     STATS_DIR: Path = BASE_DIR / "statistics"
     ASSETS_DIR: Path = SRC_DIR / "assets"
