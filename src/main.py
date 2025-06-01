@@ -54,7 +54,7 @@ class WindowManager(ScreenManager):
 
 
 class Application(App):
-    icon = 'assets/images/icon_pwr.ico'
+    icon = 'assets/images/icon.ico'
     title = 'Face Recognition'
 
     Window.size = (800, 600)
