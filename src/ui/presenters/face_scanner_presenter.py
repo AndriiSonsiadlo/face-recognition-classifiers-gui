@@ -202,10 +202,10 @@ class FaceScannerPresenter(BasePresenter):
                 self._create_blank_plot()
                 return str(config.stats.FILE_RESULT_PLOT)
 
-            ok_y, nok_y, nnok_y, x = self._process_stats_data(data_csv)
+            ok_y, nok_y, no_id_y, x = self._process_stats_data(data_csv)
 
             if x:
-                self._create_plot(x, ok_y, nok_y, nnok_y)
+                self._create_plot(x, ok_y, nok_y, no_id_y)
             else:
                 self._create_blank_plot()
 
@@ -223,50 +223,57 @@ class FaceScannerPresenter(BasePresenter):
         first_hour = (current_hour - 11) % 24
         range_hours = [(first_hour + i) % 24 for i in range(12)]
 
-        x, ok_y, nok_y, nnok_y = [], [], [], []
+        x, ok_y, nok_y, no_id_y = [], [], [], []
 
         for hour in range_hours:
-            ok, nok, nnok = 0, 0, 0
+            ok, nok, no_id = 0, 0, 0
 
             for element in data_csv:
                 try:
                     if len(element) >= 6 and int(element[0]) == hour:
-                        nnok += int(element[3])
+                        no_id += int(element[3])
                         ok += int(element[4])
                         nok += int(element[5])
                 except (ValueError, IndexError):
                     continue
 
             x.append(hour)
-            nnok_y.append(max(0, nnok - nok - ok))
-            nok_y.append(nok)
             ok_y.append(ok)
+            nok_y.append(nok)
+            no_id_y.append(no_id)
 
-        return ok_y, nok_y, nnok_y, x
+        return ok_y, nok_y, no_id_y, x
 
-    def _create_plot(self, x: list, ok_y: list, nok_y: list, nnok_y: list) -> None:
+    def _create_plot(self, x: list, ok_y: list, nok_y: list, no_id_y: list) -> None:
         try:
-            series1 = np.array(ok_y)
-            series2 = np.array(nok_y)
-            series3 = np.array(nnok_y)
+            series_ok = np.array(ok_y)
+            series_nok = np.array(nok_y)
+            series_no_id = np.array(no_id_y)
 
             index = np.arange(len(x))
             plt.figure(figsize=(10, 6))
-            plt.title('Result of identification (per hour)')
-            plt.ylabel('Count of identifications')
-            plt.xlabel('Hour')
+            plt.title('Result of identification (per hour)', fontsize=14, fontweight='bold')
+            plt.ylabel('Count of identifications', fontsize=11)
+            plt.xlabel('Hour', fontsize=11)
 
-            plt.bar(index, series1, color="g", label="Correct")
-            plt.bar(index, series2, color="r", bottom=series1, label="Incorrect")
-            plt.bar(index, series3, color="b", bottom=(series2 + series1), label="No ID")
+            color_correct = "#A8E6CF"
+            color_incorrect = "#FFB3BA"
+            color_no_id = "#BAD7FF"
+
+            plt.bar(index, series_ok, color=color_correct, label="Correct", edgecolor='white', linewidth=1)
+            plt.bar(index, series_nok, color=color_incorrect, bottom=series_ok, label="Incorrect", edgecolor='white', linewidth=1)
+            plt.bar(index, series_no_id, color=color_no_id, bottom=(series_ok + series_nok), label="No ID", edgecolor='white', linewidth=1)
 
             plt.xticks(index, x)
             ax = plt.gca()
             ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-            ax.grid(axis='y')
-            plt.legend()
+            ax.grid(axis='y', alpha=0.4, linestyle='--')
+            ax.set_facecolor('#F8F9FA')
 
-            plt.savefig(config.stats.FILE_RESULT_PLOT, dpi=80, bbox_inches='tight')
+            plt.legend(loc='upper left', framealpha=0.9)
+            plt.tight_layout()
+
+            plt.savefig(config.stats.FILE_RESULT_PLOT, dpi=100, bbox_inches='tight', facecolor='white')
             plt.close()
 
         except Exception as e:
@@ -275,10 +282,16 @@ class FaceScannerPresenter(BasePresenter):
     def _create_blank_plot(self) -> None:
         try:
             plt.figure(figsize=(10, 6))
-            plt.title('Result of identification (per hour)')
-            plt.ylabel('Count of identifications')
-            plt.xlabel('Hour')
-            plt.savefig(config.stats.FILE_RESULT_PLOT, dpi=80, bbox_inches='tight')
+            plt.title('Result of identification (per hour)', fontsize=14, fontweight='bold')
+            plt.ylabel('Count of identifications', fontsize=11)
+            plt.xlabel('Hour', fontsize=11)
+
+            ax = plt.gca()
+            ax.set_facecolor('#F8F9FA')
+            ax.grid(axis='y', alpha=0.4, linestyle='--')
+
+            plt.tight_layout()
+            plt.savefig(config.stats.FILE_RESULT_PLOT, dpi=100, bbox_inches='tight', facecolor='white')
             plt.close()
         except Exception as e:
             logger.exception("Error creating blank plot")
