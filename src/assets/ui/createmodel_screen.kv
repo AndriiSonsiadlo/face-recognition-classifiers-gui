@@ -17,7 +17,6 @@
     on_pre_enter:
         root.clear_inputs()
         root.refresh()
-        begin_learning_button.opacity = 1
 
     #frame surrounding the workspace
     BoxLayout:
@@ -204,15 +203,15 @@
                                 size_hint_x: 2
                                 Spinner:
                                     id:spinner_algorithm
-                                    text:root.set_text_algorithm_spinner()
+                                    text:"KNN Classification"
                                     text_size : self.width, None
                                     halign:'center'
                                     color: normal_text_color
                                     font_name: font_light
                                     background_normal:'assets/images/light_grey.jpg'
                                     background_down: 'assets/images/pressed.jpg'
-                                    values: root.get_values_algorithm()
-                                    on_text: root.on_spinner_select_algorithm(spinner_algorithm.text)
+                                    values: root.get_algorithms()
+                                    on_text: root.on_algorithm_selected(spinner_algorithm.text)
                                     option_cls: Factory.get("MySpinnerOption")
                         Label:
                             size_hint_y: None
@@ -236,15 +235,15 @@
                                 size_hint_x: 2
                                 Spinner:
                                     id:spinner_weights
-                                    text:root.set_text_weights_spinner()
+                                    text:"distance"
                                     text_size : self.width, None
                                     halign:'center'
                                     color: normal_text_color
                                     font_name: font_light
                                     background_normal:'assets/images/light_grey.jpg'
                                     background_down: 'assets/images/pressed.jpg'
-                                    values: root.get_values_weights()
-                                    on_text: root.on_spinner_select_weights(spinner_weights.text)
+                                    values: root.get_weights()
+                                    on_text: root.on_weight_selected(spinner_weights.text)
                                     option_cls: Factory.get("MySpinnerOption")
 
                         BoxLayout:
@@ -265,15 +264,15 @@
                                 size_hint_x: 2
                                 Spinner:
                                     id:spinner_gamma
-                                    text:root.set_text_gamma_spinner()
+                                    text:"scale"
                                     text_size : self.width, None
                                     halign:'center'
                                     color: normal_text_color
                                     font_name: font_light
                                     background_normal:'assets/images/light_grey.jpg'
                                     background_down: 'assets/images/pressed.jpg'
-                                    values: root.get_values_gamma()
-                                    on_text: root.on_spinner_select_gamma(spinner_gamma.text)
+                                    values: root.get_gammas()
+                                    on_text: root.on_gamma_selected(spinner_gamma.text)
                                     option_cls: Factory.get("MySpinnerOption")
                         Label:
                             size_hint_y: None
@@ -285,7 +284,7 @@
                             size_hint_y: None
                             height: 30
                             Label:
-                                text:"Neighbor: "
+                                text:"Neighbors: "
                                 text_size: self.size
                                 size_hint_x:1
                                 valign:'middle'
@@ -308,11 +307,12 @@
                                     color: normal_text_color
                                     font_name: font_light
                                     disabled:True
+                                    on_text: root.on_neighbor_input_changed(self.text)
                                 CustomCheckbox:
                                     id: neighbor_checkbox
                                     size_hint_x:None
                                     width:40
-                                    on_active: root.enable_input(self.active)
+                                    on_active: root.on_neighbor_checkbox_changed(self.active)
                         Label:
 
 
@@ -328,7 +328,7 @@
                         size_hint_x:0.8
                         padding: 0,0,20,0
                         Label:
-                            text:"Persons with a photo"
+                            text:"Persons with photos (for training)"
                             text_size: self.size
                             valign:'middle'
                             halign:'center'
@@ -360,16 +360,16 @@
                                 halign:'left'
                                 text_size: self.size
                                 on_text:
-                                    if self.text: root.search_person(self.text)
-                                    else: root.set_data_recycleview()
+                                    if self.text: root.search_persons(self.text)
+                                    else: root.search_persons("")
 
                             RecycleView:
                                 id: rv
                                 viewclass: 'SelectableLabel_create'
                                 SelectableRecycleBoxLayout_create:
                                     id:rv_box
-                                    data: root.set_data_recycleview()
-                                    default_size: None, dp(36)
+                                    data: root.search_persons("")
+                                    default_size: None, dp(28)
                                     default_size_hint: 1, None
                                     size_hint_y: None
                                     size_hint_x:1
@@ -378,12 +378,8 @@
                                     multiselect: False
                                     touch_multiselect: False
 
-
-
-
             Label: #space between infos and buttons
-                size_hint_y:None
-                height:50
+                size_hint_y:0.4
 
             BoxLayout:
                 orientation:'vertical'
@@ -401,43 +397,30 @@
                         color: normal_text_color
                         font_name: font_light
                         font_size: '20sp'
-                        on_press:
-                            root.change_text()
                         on_release:
-                            root.save_model()
-                            root.begin_learning()
-                        RoundButton:
-                            id:stop_learning_button
-                            opacity:0
-                            disabled:True
-                            background_color:0,0,0,0
-                            size_hint:None,None
-                            width:23
-                            height:23
-                            center_y: begin_learning_button.center_y
-                            center_x: begin_learning_button.center_x + begin_learning_button.width/3
-                            color: normal_text_color
-                            font_name: font_light
-                            on_release: root.cancel_learning()
-                            Image:
-                                center: self.parent.center
-                                size_hint:None,None
-                                width: self.parent.width
-                                height: self.parent.height
-                                source: 'assets/images/delet_this.png'
-                                opacity:.4
-                                #mipmap:True
+                            root.begin_training()
                     Label:
                         size_hint_x:1.4
                 Label:
                     id: learning_results
-                    text:"Elapsed time: 534:233. Acuuracy: 54%"
+                    text:"Learning time: N/A, Accuracy: N/A"
                     size_hint_y:0.3
                     height:0
                     font_name: font_light
                     font_size: '13sp'
                     color: normal_text_color
-                Label:
-                    size_hint_y: None
-                    height: 20
-
+                    opacity: 0
+                BoxLayout:
+                    orientation: 'horizontal'
+                    Label:
+                        size_hint_x: 1
+                    RoundButton:
+                        id: cancel_btn
+                        size_hint_x: 0.5
+                        size_hint_y: None
+                        height: 40
+                        text: "Back"
+                        on_release:
+                            root.go_back_to_learning()
+                    Label:
+                        size_hint_x: 1

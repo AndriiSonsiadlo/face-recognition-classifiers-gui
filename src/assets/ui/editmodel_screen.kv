@@ -3,9 +3,8 @@
 <LearningEdit>:
     name:"learning_edit"
     on_pre_enter:
-        root.load_list()
         root.clear_inputs()
-        root.show_selected()
+
     #frame surrounding the workspace
     BoxLayout:
         orientation: 'vertical'
@@ -220,7 +219,7 @@
                             id:threshold
                             disabled:True
                             input_filter: 'float'
-                            hint_text:root.get_default_threshold() if manual_checkbox.active == False else root.get_model_threshold()
+                            hint_text:"0.5"
                             text_size: self.size
                             valign:'middle'
                             halign:'left'
@@ -233,7 +232,7 @@
                             active:False
                             size_hint_x:None
                             width:40
-                            on_active: root.enable_input(self.active)
+                            on_active: root.enable_threshold_input(self.active)
                         Label:
                            # size_hint_x:0.7
                     Label:
@@ -260,9 +259,7 @@
                         color: normal_text_color
                         font_name: font_light
                         on_release:
-                            root.save_edited_model()
-                            root.manager.transition.direction = "left"
-                            root.manager.current = "learning"
+                            root.save_changes()
                     Label
 
                 BoxLayout:
@@ -277,13 +274,29 @@
                         width:100
                         height:40
                         pos_hint: {'top': 1}
-                        text:"Cancel"
+                        text:"Delete"
                         color: normal_text_color
                         font_name: font_light
                         on_release:
-                            root.manager.transition.direction = "left"
-                            root.manager.current = "learning"
+                            root.delete_model()
+                    Label
+
+                BoxLayout:
+                    #layout for having save button in the centre
+                    orientation:'horizontal'
+                    size_hint_y:None
+                    height: 50
+                    Label:
+                    RoundButton:
+                        size_hint_y:None
+                        size_hint_x:None
+                        width:100
+                        height:40
+                        pos_hint: {'top': 1}
+                        text:"Back"
+                        color: normal_text_color
+                        font_name: font_light
+                        on_release:
+                            root._navigate_back()
                     Label:
                 Label:
-
-

@@ -6,6 +6,7 @@
     name: "learning"
     on_pre_enter:
         root.refresh()
+
     #frame surrounding the workspace
     BoxLayout:
         orientation: 'vertical'
@@ -69,7 +70,7 @@
                         font_name: font_light
                     Spinner:
                         id:model_name
-                        text:root.model_name
+                        text:"No models"
                         text_size : self.width, None
                         halign:'center'
                         valign:'middle'
@@ -77,8 +78,8 @@
                         font_name: font_light
                         background_normal:'assets/images/light_grey.jpg'
                         background_down: 'assets/images/pressed.jpg'
-                        values: root.get_values()
-                        on_text: root.on_spinner_select(model_name.text)
+                        values: root.presenter.get_model_names() if root.presenter else []
+                        on_text: root.on_model_selected(model_name.text)
                         option_cls: Factory.get("MySpinnerOption")
 
                 BoxLayout:
@@ -95,7 +96,7 @@
 
                     Label:
                         id:created_date
-                        text:root.created
+                        text:"N/A"
                         text_size: self.size
                         halign:'left'
                         valign:'middle'
@@ -116,7 +117,7 @@
 
                     Label:
                         id:author
-                        text:root.author
+                        text:"N/A"
                         text_size: self.size
                         halign:'left'
                         valign:'middle'
@@ -244,7 +245,7 @@
                     size_hint_y: None
                     height: 30
                     Label:
-                        text:"Learning time [in sec]: "
+                        text:"Learning time [s]: "
                         text_size: self.size
                         valigh: 'middle'
                         halign:'right'
@@ -302,13 +303,10 @@
                         color: normal_text_color
                         font_name: font_light
 
-
-
                 BoxLayout:
                     orientation: 'horizontal'
                     size_hint_y: None
                     height: 30
-#                    opacity: 0
                     Label:
                         text:"Count in testing: "
                         text_size: self.size
@@ -377,7 +375,7 @@
                         id:comment
                         height: self.texture_size[1]
                         width: self.texture_size[0]
-                        text:root.comment
+                        text:"N/A"
                         opacity:0
                         font_name: font_light
                         text_size: self.width, None
@@ -386,15 +384,16 @@
                         halign:'left'
                         color: normal_text_color
 
+            Label:
+                size_hint_x:None
+                width:30
+
             BoxLayout:
                 orientation: 'vertical'
 
                 BoxLayout:
                     orientation: 'horizontal'
-                    size_hint_y: 0.35
-                    Label:
-                        size_hint_x:None
-                        width:30
+                    size_hint_y: None
                     RoundButton:
                         id:delete_btn
                         disabled:True
@@ -404,7 +403,7 @@
                         pos_hint: {'top': 1}
                         opacity:.5
                         on_release:
-                            root.show_popup()
+                            root.delete_model()
                         Label:
                             id:delete_btn_text
                             center_y: self.parent.center_y*1.03
@@ -424,8 +423,7 @@
                             opacity:0.5
 
                     Label:
-                        size_hint_x:None
-                        width:10
+                        size_hint_x:0.05
 
                     RoundButton:
                         id:edit_btn
@@ -436,8 +434,7 @@
                         pos_hint: {'top': 1}
                         opacity:.5
                         on_release:
-                            root.manager.current = "learning_edit"
-                            root.manager.transition.direction = "left"
+                            root.edit_model()
                         Label:
                             id:edit_btn_text
                             center_y: self.parent.center_y*1.03
@@ -467,8 +464,7 @@
                         size_hint_x:.7
                         pos_hint: {'top': 1}
                         on_release:
-                            root.manager.transition.direction = "left"
-                            root.manager.current = "learning_create"
+                            root.create_new_model()
                         Label:
                             id:create_btn_text
                             center_y: self.parent.center_y*1.03
@@ -486,8 +482,9 @@
                             height: 20
                             allow_stretch: True
                             opacity:0.5
+
                 BoxLayout:
-                    padding:0,0,100,0
+                    padding:0,0,0,0
                     orientation: 'vertical'
                     id: train_dataset
                     Label:
@@ -499,81 +496,46 @@
                         valign:'top'
                         color: header_text_color
                         font_name: font_light
+
                     BoxLayout:
-                        orientation: 'horizontal'
-                        BoxLayout:
-                            orientation: 'vertical'
-                            padding: 0,10,0,0
+                        orientation: 'vertical'
+                        padding: 0,10,0,0
 
-                            canvas.before:
-                                Color:
-                                    rgb: (240/255,240/255,240/255)
-                                Rectangle:
-                                    pos: self.pos
-                                    size: self.size
+                        canvas.before:
+                            Color:
+                                rgb: (240/255,240/255,240/255)
+                            Rectangle:
+                                pos: self.pos
+                                size: self.size
 
-                            RecycleView:
-                                id: rv
-                                viewclass: 'SelectableLabel_create'
-                                SelectableRecycleBoxLayout_create:
-                                    id:rv_box
-                                    default_size: None, dp(28)
-                                    default_size_hint: 1, None
-                                    size_hint_y: None
-                                    size_hint_x:1
-                                    height: self.minimum_height
-                                    orientation: 'vertical'
-                                    multiselect: False
-                                    touch_multiselect: False
-
-                            TextInput:
+                        RecycleView:
+                            id: rv
+                            viewclass: 'SelectableLabel_create'
+                            SelectableRecycleBoxLayout_create:
+                                id:rv_box
+                                default_size: None, dp(28)
+                                default_size_hint: 1, None
                                 size_hint_y: None
-                                id: search_field
-                                height: 30
-                                id: search_input
-                                font_size: self.height/2
-                                multiline:False
-                                hint_text:"Search..."
-                                color: normal_text_color
-                                font_name: font_light
-                                valign:'middle'
-                                halign:'left'
-                                text_size: self.size
-                                on_text:
-                                    if self.text: root.search_person(self.text)
-                                    else: root.set_data_recycleview()
+                                size_hint_x:1
+                                height: self.minimum_height
+                                orientation: 'vertical'
+                                multiselect: False
+                                touch_multiselect: False
+
+                        TextInput:
+                            id: search_input
+                            size_hint_y: None
+                            height: 30
+                            font_size: self.height/2
+                            multiline:False
+                            hint_text:"Search..."
+                            color: normal_text_color
+                            font_name: font_light
+                            valign:'middle'
+                            halign:'left'
+                            text_size: self.size
+                            on_text:
+                                if self.text: root.search_persons(self.text)
+                                else: root.search_persons("")
                     Label:
                         size_hint_y: 0.5
-
-
-
-
-
-
-            #Label:
-                #text:"GPU: "
-                #text_size: self.size
-                #size_hint_x:None
-                #width:50
-                #font_size: '13sp'
-                #halign:'right'
-                #valign:'top'
-                #color: header_text_color
-                #font_name: font_light
-
-            #Label:
-                #id:gpu_name
-                #size_hint_x:.6
-                #text:"No detected"
-                #font_size: '13sp'
-                #text_size: self.size
-                #valign:'top'
-                #halign:'left'
-                #size_hint_x:None
-                #color: normal_text_color
-                #font_name: font_light
-
-
-
-
-

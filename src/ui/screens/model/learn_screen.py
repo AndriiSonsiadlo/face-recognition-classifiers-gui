@@ -1,193 +1,154 @@
-# Copyright (C) 2021 Andrii Sonsiadlo
+from typing import Optional
 
-import re
-from kivy.uix.screenmanager import Screen
-from Popup.my_popup_ask import MyPopupAskModel
-from _const._const import algorithm_knn
-from _const._customization import no_elements_text
-from model.model_list import ModelList
-from person.person_list import PersonList
+from kivy.clock import mainthread
 
+from core import AppLogger
+from ui.base_screen import BaseScreen
+from ui.popups.training_progress import TrainingProgressPopup
+from ui.presenters.learning_mode_presenter import LearningModePresenter
 
-class LearningMode(Screen):
-	model_name = "N/A"
-	created = "N/A"
-	author = "N/A"
-	comment = "N/A"
-	model_list: ModelList
+logger = AppLogger().get_logger(__name__)
 
-	def __init__(self, **kw):
-		super().__init__(**kw)
-		self.load_list()
+class LearningMode(BaseScreen):
+    screen = None
 
-	def refresh(self):  # update screen
-		self.ids.model_name.values = self.get_values()
-		self.ids.rv_box.select_node(None)
-		self.show_selected()
+    def __init__(self, **kwargs):
+        super().__init__(__name__, **kwargs)
+        LearningMode.screen = self
 
-	def load_list(self):
-		self.model_list = ModelList()
-		self.model_list.update_model_list()
+        self.presenter: Optional['LearningModePresenter'] = None
+        self.training_popup: Optional[TrainingProgressPopup] = None
+        self._initialize()
 
-	# display model info on screen
-	def set_model_data(self, name):
-		model = self.model_list.find_first(name)
-		self.model_list.set_selected(name)
-		self.ids.model_name.text = model.name
-		self.ids.created_date.text = model.created
-		self.ids.author.text = model.author
-		self.ids.comment.text = model.comment
-		if model.comment != '':
-			self.ids.comment.opacity = 1
-		else:
-			self.ids.comment.opacity = 0
+    def _initialize(self) -> None:
+        try:
+            self.presenter = LearningModePresenter(self)
+            self.presenter.start()
+            logger.info("LearningMode initialized successfully")
+        except Exception as e:
+            self.logger.exception(f"Error initializing LearningMode: {e}")
+            self.show_error("Initialization Error", str(e))
 
-		self.ids.algorithm_text.text = model.algorithm
-		if (model.algorithm == algorithm_knn):
-			self.ids.neighbor_box.height = 30
-			self.ids.neighbor_box.opacity = 1
-			self.ids.threshold_box.height = 30
-			self.ids.threshold_box.opacity = 1
-			self.ids.weight_box.height = 30
-			self.ids.weight_box.opacity = 1
+    def on_pre_enter(self) -> None:
+        try:
+            self.refresh()
+        except Exception as e:
+            self.logger.exception("Error on_pre_enter")
 
-			self.ids.gamma_box.height = 0
-			self.ids.gamma_box.opacity = 0
+    def refresh(self) -> None:
+        try:
+            if self.presenter:
+                self.presenter.refresh()
+            logger.info("LearningMode refreshed")
+        except Exception as e:
+            self.logger.exception("Error refreshing LearningMode")
 
-			self.ids.threshold.text = str(model.threshold)
-			self.ids.num_neighbors.text = str(model.n_neighbors)
-			self.ids.weight.text = str(model.weight)
+    def on_model_selected(self, model_name: str) -> None:
+        try:
+            if self.presenter:
+                self.presenter.select_model(model_name)
+        except Exception as e:
+            self.logger.exception("Error selecting model")
 
-		else:
-			self.ids.gamma_box.height = 30
-			self.ids.gamma_box.opacity = 1
-			self.ids.gamma.text = str(model.gamma)
+    def search_persons(self, query: str) -> None:
+        try:
+            if self.presenter:
+                self.presenter.search_persons(query)
+        except Exception as e:
+            self.logger.exception("Error searching persons")
 
-			self.ids.neighbor_box.height = 0
-			self.ids.neighbor_box.opacity = 0
-			self.ids.threshold_box.height = 0
-			self.ids.threshold_box.opacity = 0
-			self.ids.weight_box.height = 0
-			self.ids.weight_box.opacity = 0
+    def create_new_model(self) -> None:
+        try:
+            self.manager.transition.direction = "left"
+            self.manager.current = "learning_create"
+        except Exception as e:
+            self.logger.exception("Error navigating to create model")
 
-		self.ids.learning_time.text = str(model.learning_time)
-		self.ids.accuracy.text = str(model.accuracy)
-		self.ids.num_trained.text = str(model.count_train_Y)
-		self.ids.num_tested.text = str(model.count_test_Y)
-		self.ids.num_all.text = str(len(PersonList().get_list()))
+    def edit_model(self) -> None:
+        try:
+            if not self.presenter or not self.presenter.selected_model:
+                self.show_error("Error", "No model selected")
+                return
 
-		self.set_data_recycleview()
-		print("Loaded model:", model.name, model.created, model.author, model.comment, model.path_model_data)
+            edit_screen = self.manager.get_screen("learning_edit")
+            edit_screen.model = self.presenter.selected_model
 
-	# clear on screen model info
-	def clear_model_data(self):
-		self.ids.model_name.text = "N/A"
-		self.ids.created_date.text = "N/A"
-		self.ids.author.text = "N/A"
-		self.ids.comment.text = "N/A"
-		self.ids.algorithm_text.text = "N/A"
-		self.ids.learning_time.text = "N/A"
-		self.ids.accuracy.text = "N/A"
-		self.ids.num_trained.text = "N/A"
-		self.ids.num_tested.text = "N/A"
-		self.ids.num_all.text = "N/A"
+            self.manager.transition.direction = "left"
+            self.manager.current = "learning_edit"
 
-		self.ids.num_neighbors.text = "N/A"
-		self.ids.weight.text = "N/A"
-		self.ids.threshold.text = "N/A"
+            logger.info(f"Editing model: {self.presenter.selected_model.name}")
 
-		self.ids.gamma_box.height = 0
-		self.ids.gamma_box.opacity = 0
-		self.ids.neighbor_box.height = 0
-		self.ids.neighbor_box.opacity = 0
-		self.ids.weight_box.height = 0
-		self.ids.weight_box.opacity = 0
-		self.ids.threshold_box.height = 0
-		self.ids.threshold_box.opacity = 0
+        except Exception as e:
+            self.logger.exception("Error editing model")
+            self.show_error("Error", str(e))
 
-		self.ids.comment.opacity = 0
-		self.ids.train_dataset.opacity = 0
+    def delete_model(self) -> None:
+        try:
+            if not self.presenter or not self.presenter.selected_model:
+                self.show_error("Error", "No model selected")
+                return
 
-	# get names of the model dropdown menu
-	def get_values(self):
-		values = []
-		self.load_list()
-		if self.model_list.is_empty():
-			values.append("N/A")
-		else:
-			for item in self.model_list.get_list():
-				values.append(item.name)
-		return values
+            from ui.popups.delete import DeleteModelPopup
+            popup = DeleteModelPopup(self.presenter.selected_model.name)
+            popup.bind(on_dismiss=self._on_model_deleted)
+            popup.open()
 
-	def on_spinner_select(self, name):
-		model = self.model_list.find_first(name)
-		if model is not None:
-			self.ids.rv_box.select_node(None)
-			model_name = model.name
-			self.model_list.set_selected(model_name)
-			self.set_model_data(model_name)
+        except Exception as e:
+            self.logger.exception("Error deleting model")
+            self.show_error("Error", str(e))
 
-	# show info about selected model
-	def show_selected(self):
-		if not self.model_list.is_empty():
-			self.enable_button(self.ids.edit_btn)
-			self.enable_button(self.ids.delete_btn)
+    @mainthread
+    def _on_model_deleted(self, instance) -> None:
+        try:
+            if self.presenter:
+                self.presenter.selected_model = None
 
-			model = self.model_list.get_selected()
-			if model is None:  # show last model if none has been selected
-				model = self.model_list.get_list()[-1]
-			model_name = model.name
-			self.set_model_data(model_name)
-			self.set_data_recycleview()
-		else:
-			self.clear_model_data()
-			self.disable_button(self.ids.edit_btn)
-			self.disable_button(self.ids.delete_btn)
+            self.refresh()
 
-	def set_data_recycleview(self):
-		model = self.model_list.get_selected()
-		if (model is not None):
-			if len(model.train_dataset_Y):
-				self.ids.train_dataset.opacity = 1
-				self.ids.rv.data = [{'text': name} for name in model.train_dataset_Y]
-			else:
-				self.ids.rv.data = [{'text': no_elements_text}]
+            if self.presenter:
+                self.presenter.clear_model_data()
 
-	def set_search_data_recycleview(self, search_list):
-		if len(search_list):
-			self.ids.rv.data = [{'text': name} for name in search_list]
-		else:
-			self.ids.rv.data = [{'text': no_elements_text}]
+            if hasattr(self.ids, 'model_name'):
+                model_names = self.presenter.get_model_names()
+                self.ids.model_name.values = model_names
 
-	def search_person(self, text_filter):
-		self.ids.rv_box.select_node(None)
-		model = self.model_list.get_selected()
-		if (model is not None):
-			search_person_list = []
-			for name in model.train_dataset_Y:
-				try:
-					if re.search(str(text_filter).lower(), name.lower()):
-						search_person_list.append(name)
-				except BaseException:
-					pass
-			self.set_search_data_recycleview(search_person_list)
+                if model_names:
+                    self.ids.model_name.text = model_names[0]
+                    self.presenter.select_model(model_names[0])
+                else:
+                    self.ids.model_name.text = "No models"
 
-	def disable_button(self, button):
-		button.disabled = True
-		button.opacity = .5
+            logger.info("Model deleted and UI refreshed")
 
-	def enable_button(self, button):
-		button.disabled = False
-		button.opacity = 1
+        except Exception as e:
+            self.logger.exception("Error on model deleted")
 
-	def show_popup(self):
-		selected = self.model_list.get_selected()
-		if selected is not None:
-			popupWindow = MyPopupAskModel()
-			popupWindow.bind(on_dismiss=self.popup_refresh)
-			popupWindow.open()
+    def show_training_progress(self, on_cancel=None) -> None:
+        try:
+            self.training_popup = TrainingProgressPopup(on_cancel_callback=on_cancel)
+            self.training_popup.open()
+            logger.info("Training progress popup opened")
+        except Exception as e:
+            self.logger.exception("Error showing training progress")
 
-	def popup_refresh(self, instance):  # update screen after pressing delete
-		self.ids.rv_box.select_node(None)
-		self.load_list()
-		self.refresh()
+    @mainthread
+    def hide_training_progress(self) -> None:
+        try:
+            if self.training_popup:
+                self.training_popup.dismiss()
+                self.training_popup = None
+            logger.info("Training progress popup closed")
+        except Exception as e:
+            self.logger.exception("Error hiding training progress")
+
+    def on_leave(self) -> None:
+        try:
+            if self.training_popup:
+                self.training_popup.dismiss()
+                self.training_popup = None
+
+            if self.presenter:
+                self.presenter.stop()
+            logger.info("LearningMode screen left")
+        except Exception as e:
+            self.logger.exception("Error on_leave")

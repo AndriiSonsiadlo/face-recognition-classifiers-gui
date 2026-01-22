@@ -1,88 +1,105 @@
-# Copyright (C) 2021 Andrii Sonsiadlo
+from typing import Optional
 
-from kivy.uix.screenmanager import Screen
+from core import AppLogger
+from ui.base_screen import BaseScreen
+from ui.presenters.learning_edit_presenter import LearningEditPresenter
 
-from _const._const import *
-from model.model_list import ModelList
+logger = AppLogger().get_logger(__name__)
 
 
-class LearningEdit(Screen):
+class LearningEdit(BaseScreen):
+    model = None
 
-	def __init__(self, **kw):
-		super().__init__(**kw)
-		self.model_list = ModelList()
-		self.description_deleted = False
+    def __init__(self, **kwargs):
+        super().__init__(__name__, **kwargs)
+        self.presenter: Optional['LearningEditPresenter'] = None
+        self._initialize()
 
-	def load_list(self):
-		self.model_list = ModelList()
+    def _initialize(self) -> None:
+        try:
+            self.presenter = LearningEditPresenter(self)
+            self.presenter.start()
+            logger.info("LearningEdit initialized successfully")
+        except Exception as e:
+            self.logger.exception(f"Error initializing LearningEdit: {e}")
+            self.show_error("Initialization Error", str(e))
 
-	# display model info on screen
-	def set_model_data(self, list, name):
-		model = list.find_first(name)
-		self.ids.model_name.hint_text = model.name
-		self.ids.created_date.text = model.created
-		self.ids.author.text = model.author
-		if (model.algorithm == algorithm_knn):
-			self.ids.threshold_box.height = 30
-			self.ids.threshold_box.opacity = 1
-		else:
-			self.ids.threshold_box.height = 0
-			self.ids.threshold_box.opacity = 0
+    def on_pre_enter(self) -> None:
+        try:
+            if self.model and self.presenter:
+                self.presenter.set_model(self.model)
+            self.clear_inputs()
+        except Exception as e:
+            self.logger.exception("Error on_pre_enter")
 
-		if model.comment != '':
-			self.ids.description.hint_text = model.comment
-		else:
-			self.ids.description.hint_text = "No description"
+    def clear_inputs(self) -> None:
+        try:
+            if self.ids.manual_checkbox:
+                self.ids.manual_checkbox.active = False
+            self.presenter.enable_threshold_input(False)
+        except Exception as e:
+            self.logger.exception("Error clearing inputs")
 
-	# show info about selected model
-	def show_selected(self):
-		if not self.model_list.is_empty():
-			model = self.model_list.get_selected()
-			model_name = model.name
-			self.set_model_data(self.model_list, model_name)
+    def enable_threshold_input(self, enabled: bool) -> None:
+        try:
+            if self.presenter:
+                self.presenter.enable_threshold_input(enabled)
+        except Exception as e:
+            self.logger.exception("Error enabling threshold input")
 
-	def save_edited_model(self):
-		model = self.model_list.get_selected()
-		if (self.ids.model_name.text != ''):
-			self.model_list.edit_model_name(model.name, self.ids.model_name.text)
-		if (self.ids.description.text != '' or self.ids.description.hint_text != model.comment):
-			self.model_list.edit_model_description(model.name, self.ids.description.text)
-		if (self.description_deleted):
-			self.model_list.edit_model_description(model.name, '')
-		if (self.ids.threshold.text != ''):
-			try:
-				self.model_list.edit_model_threshold(model.name, round(float(self.ids.threshold.text), 4))
-			except BaseException:
-				self.model_list.edit_model_threshold(model.name, model.threshold)
-		else:
-			self.model_list.edit_model_threshold(model.name, model.threshold)
+    def delete_description(self) -> None:
+        try:
+            if self.presenter:
+                self.presenter.delete_description()
+        except Exception as e:
+            self.logger.exception("Error deleting description")
 
-	def get_default_threshold(self):
-		return str(threshold_default)
+    def save_changes(self) -> None:
+        try:
+            if not self.presenter:
+                self.show_error("Error", "Presenter not initialized")
+                return
 
-	def get_model_threshold(self):
-		return str(self.model_list.get_selected().threshold)
+            success = self.presenter.save_changes()
+            if success:
+                self._navigate_back()
 
-	def clear_inputs(self):
-		self.description_deleted = False
-		self.ids.model_name.text = ''
-		self.ids.author.text = ''
-		self.ids.description.text = ''
-		model = self.model_list.get_selected()
-		if model.threshold != threshold_default:
-			self.ids.manual_checkbox.active = True
-			self.ids.threshold.text = str("{:}".format(model.threshold))
+        except Exception as e:
+            self.logger.exception("Error saving changes")
+            self.show_error("Error", str(e))
 
-	def enable_input(self, value):
-		if value is True:
-			self.ids.threshold.disabled = False
-			self.ids.threshold.text = self.get_model_threshold()
-		else:
-			self.ids.threshold.disabled = True
-			self.ids.threshold.text = str(threshold_default)
+    def delete_model(self) -> None:
+        try:
+            if not self.model:
+                self.show_error("Error", "No model selected")
+                return
 
-	def delete_description(self):
-		model = self.model_list.get_selected()
-		self.ids.description.text = ''
-		self.ids.description.hint_text = 'description deleted'
-		self.description_deleted = True
+            from ui.popups.delete import DeleteModelPopup
+            popup = DeleteModelPopup(self.model.name)
+            popup.bind(on_dismiss=self._on_model_deleted)
+            popup.open()
+
+        except Exception as e:
+            self.logger.exception("Error deleting model")
+            self.show_error("Error", str(e))
+
+    def _on_model_deleted(self, instance) -> None:
+        try:
+            self._navigate_back()
+        except Exception as e:
+            self.logger.exception("Error on model deleted")
+
+    def _navigate_back(self) -> None:
+        try:
+            self.manager.transition.direction = "right"
+            self.manager.current = "learning"
+        except Exception as e:
+            self.logger.exception("Error navigating back")
+
+    def on_leave(self) -> None:
+        try:
+            if self.presenter:
+                self.presenter.stop()
+            logger.info("LearningEdit screen left")
+        except Exception as e:
+            self.logger.exception("Error on_leave")

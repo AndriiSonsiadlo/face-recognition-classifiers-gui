@@ -1,5 +1,3 @@
-# Copyright (C) 2021 Andrii Sonsiadlo
-
 from kivy.properties import BooleanProperty
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.label import Label
@@ -7,54 +5,45 @@ from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 
-from Popup.my_popup_person_info import MyPopupPersonInfo
-from Popup.my_popup_warn import MyPopupWarn
-from _const._customization import no_elements_text
-from person.person import Person
-from person.person_list import PersonList
+from core import config
+from ui.popups.warn import WarnPopup
 
 
 class SelectableRecycleBoxLayout_create(FocusBehavior, LayoutSelectionBehavior, RecycleBoxLayout):
-	""" Adds selection and focus behaviour to the view. """
+    """Adds selection and focus behaviour to the view."""
+
 
 class SelectableLabel_create(RecycleDataViewBehavior, Label):
-	""" Add selection support to the Label """
-	index = None
-	selected = BooleanProperty(False)
-	selectable = BooleanProperty(True)
+    """Add selection support to the Label."""
+    index = None
+    selected = BooleanProperty(False)
+    selectable = BooleanProperty(True)
 
-	def __init__(self, **kwargs):
-		super(SelectableLabel_create, self).__init__(**kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-	def refresh_view_attrs(self, rv, index, data):
-		""" Catch and handle the view changes """
-		self.index = index
-		return super(SelectableLabel_create, self).refresh_view_attrs(
-			rv, index, data)
+    def refresh_view_attrs(self, rv, index, data):
+        self.index = index
+        return super().refresh_view_attrs(rv, index, data)
 
-	def on_touch_down(self, touch):
-		""" Add selection on touch down """
-		if super(SelectableLabel_create, self).on_touch_down(touch):
-			return True
-		if self.collide_point(*touch.pos) and self.selectable:
-			return self.parent.select_with_touch(self.index, touch)
+    def on_touch_down(self, touch):
+        if super().on_touch_down(touch):
+            return True
+        if self.collide_point(*touch.pos) and self.selectable:
+            return self.parent.select_with_touch(self.index, touch)
+        return None
 
-	def apply_selection(self, rv, index, is_selected):
-		name = rv.data[index]["text"]
-		if not name == no_elements_text and is_selected:
-			person_list = PersonList()
-			person = person_list.find_first(name)
-			if (person is not None):
-				self.show_popup_person_info(person=person)
-			else:
-				self.show_popup_warm(title=f"{name} not found in database")
-		""" Respond to the selection of items in the view. """
-		pass
+    def apply_selection(self, rv, index, is_selected):
+        from services import person_service
 
-	def show_popup_person_info(self, person: Person):
-		popupWindow = MyPopupPersonInfo(person=person)
-		popupWindow.open()
-
-	def show_popup_warm(self, title):
-		popupWindow = MyPopupWarn(text=title)
-		popupWindow.open()
+        name = rv.data[index]["text"]
+        if is_selected:
+            person = person_service.get_person(name)
+            if name == config.ui.TEXTS["no_persons"]:
+                return
+            if person:
+                from ui.popups.person_info import PersonInfoPopup
+                PersonInfoPopup(person=person).open()
+            else:
+                WarnPopup(title=f"{name} not found in database").open()
+            self.parent.select_node(None)
